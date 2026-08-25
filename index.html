@@ -3,28 +3,2532 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>YISL AR VR Workshop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>VR Navigator - Spatial Wayfinding System</title>
+    <meta name="description" content="Next-generation immersive VR navigation system for Meta Quest 3S and desktop browsers." />
+
+    <!-- A-Frame Library CDN -->
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Inline CSS for Desktop HUD and fallbacks -->
+    <style>
+        :root {
+            --bg-color: rgba(10, 11, 20, 0.85);
+            --bg-panel: rgba(20, 23, 38, 0.9);
+            --primary: #00f2fe;
+            --primary-glow: rgba(0, 242, 254, 0.4);
+            --secondary: #7928ca;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --text: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: rgba(0, 242, 254, 0.2);
+            --font: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font);
+            color: var(--text);
+            overflow: hidden;
+            background-color: #030307;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 2D Desktop Panel Overlay */
+        #desktop-hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 380px;
+            height: 100vh;
+            background: var(--bg-color);
+            backdrop-filter: blur(16px);
+            border-right: 1px solid var(--border);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        /* Responsive Mobile Layout: Collapse Sidebar to bottom sheet */
+        @media (max-width: 768px) {
+            #desktop-hud {
+                width: 100%;
+                height: 45vh;
+                top: auto;
+                bottom: 0;
+                border-right: none;
+                border-top: 1px solid var(--border);
+            }
+        }
+
+        .hud-header {
+            padding: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .hud-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pulse-icon {
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px var(--primary);
+            animation: pulse-glow 1.5s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(0, 242, 254, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 242, 254, 0);
+            }
+        }
+
+        /* Scrollable content */
+        .hud-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .hud-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .hud-content::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .section-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        /* Glass Panel Styling */
+        .glass-panel {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Search Dropdown */
+        .search-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        select {
+            width: 100%;
+            background: rgba(10, 11, 20, 0.9);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: var(--font);
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        /* Route Instructions Panel */
+        #route-info-panel {
+            display: none;
+        }
+
+        .route-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .direction-banner {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.1), rgba(121, 40, 202, 0.1));
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .direction-icon {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        .direction-text-container {
+            flex: 1;
+        }
+
+        .direction-instruction {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .direction-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .steps-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .step-item {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            opacity: 0.65;
+            transition: opacity 0.2s, background-color 0.2s;
+        }
+
+        .step-item.active {
+            opacity: 1;
+            background: rgba(0, 242, 254, 0.05);
+            border: 1px solid rgba(0, 242, 254, 0.15);
+        }
+
+        .step-index {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .step-item.active .step-index {
+            background: var(--primary);
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* Buttons styles */
+        button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: var(--font);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #2563eb);
+            color: #020617;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #00d2de, #1d4ed8);
+            box-shadow: 0 4px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Mode & Controls Group */
+        .controls-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        /* Custom Slider styling */
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        /* Desktop Fallback Instruction Cards */
+        #desktop-instructions {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 280px;
+            background: var(--bg-color);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .instruction-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .key-cap {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--text);
+        }
+
+        /* Overlay Alerts */
+        #alert-box {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: rgba(16, 185, 129, 0.95);
+            color: #020617;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #alert-box.show {
+            opacity: 1;
+            transform: translate(-50%, 10px);
+        }
+
+        #alert-box.warning {
+            background: rgba(245, 158, 11, 0.95);
+        }
+
+        #alert-box.danger {
+            background: rgba(239, 68, 68, 0.95);
+            color: white;
+        }
+
+        /* WebXR VR Unavailable banner */
+        #xr-banner {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 11, 20, 0.9);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            z-index: 10;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            pointer-events: none;
+            text-align: center;
+        }
+
+        /* Container for A-Frame Canvas */
+        #scene-container {
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Mute Float Button */
+        #mute-toggle-2d {
+            position: absolute;
+            top: 20px;
+            left: 400px;
+            z-index: 10;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.2s;
+        }
+
+        #mute-toggle-2d:hover {
+            border-color: var(--primary);
+        }
+
+        @media (max-width: 768px) {
+            #mute-toggle-2d {
+                left: auto;
+                right: 20px;
+                top: 80px;
+            }
+        }
+
+        .icon-svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text);
+        }
+
+        .muted .icon-svg {
+            fill: var(--error);
+        }
+    </style>
 </head>
 
 <body>
-    <a-scene>
+    <!-- 2D Desktop Sidebar HUD Panel -->
+    <div id="desktop-hud">
+        <div class="hud-header">
+            <h1 class="hud-title">
+                <span class="pulse-icon"></span>
+                VR NAVIGATOR
+            </h1>
+        </div>
 
-        <a-sky color="pink"></a-sky>
-        <a-box position="-1 -0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-        <a-sphere position="0 0.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-        <a-cylinder position="1 -0.25 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-        <a-plane position="0 -1 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+        <div class="hud-content">
+            <!-- Search & Navigation Trigger -->
+            <div class="glass-panel search-group">
+                <div class="section-label">Select Destination</div>
+                <select id="destination-selector">
+                    <option value="" disabled selected>Choose a destination...</option>
+                    <option value="tech_hub">🏢 Tech Hub Skyscraper (Start)</option>
+                    <option value="cafe_neon">☕ Cafe Neon</option>
+                    <option value="park">🌳 Central Park</option>
+                    <option value="retail">🛍️ Retail Plaza</option>
+                    <option value="hospital">🏥 General Hospital</option>
+                    <option value="station">🚉 Grand Station</option>
+                    <option value="airport">✈️ City Airport Terminal</option>
+                    <option value="academy">🏫 Future Academy</option>
+                    <option value="observatory">🔭 Skyline Observatory</option>
+                </select>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="btn-primary" id="btn-start-nav" style="flex: 2;">Start Route</button>
+                    <button class="btn-danger" id="btn-cancel-nav" style="flex: 1; display: none;">Stop</button>
+                </div>
+            </div>
 
-        <a-image src="https://raw.githubusercontent.com/alluringxstalwart/SourceYISL/main/Landscape1.png"
-            position="0 5 -10" width="25" height="7.5"></a-image>
+            <!-- Dynamic GPS Turn-by-Turn Panel -->
+            <div class="glass-panel" id="route-info-panel">
+                <div class="section-label">GPS Navigation Active</div>
+                <div class="direction-banner">
+                    <div class="direction-icon" id="hud-nav-icon">↑</div>
+                    <div class="direction-text-container">
+                        <div class="direction-instruction" id="hud-nav-instruction">Go straight along road</div>
+                        <div class="direction-sub" id="hud-nav-sub">Next: --m</div>
+                    </div>
+                </div>
 
-        <a-text value="YISL AR VR Workshop" position="0 9.5 -10" align="center" color="white" font="mozillavr"
-            width="10" height="5" anchor="center">
-        </a-text>
+                <div class="route-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="hud-stat-dist">--m</div>
+                        <div class="stat-label">Remaining Dist</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="hud-stat-time">--s</div>
+                        <div class="stat-label">Est. Time</div>
+                    </div>
+                </div>
 
+                <div class="section-label">Route Steps</div>
+                <div class="steps-list" id="hud-steps-list">
+                    <!-- Javascript populates -->
+                </div>
+            </div>
 
-    </a-scene>
+            <!-- Map View Mode and Comfort Settings -->
+            <div class="glass-panel controls-group">
+                <div class="section-label">Navigation System Options</div>
+                
+                <!-- View Mode Button -->
+                <button class="btn-secondary" id="btn-toggle-view-2d">Switch to Overview Mode</button>
+                <button class="btn-secondary" id="btn-recenter-2d">Recenter Position</button>
+
+                <!-- Locomotion Speed Slider -->
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span>Movement Speed</span>
+                        <span id="label-speed">5.0 m/s</span>
+                    </div>
+                    <input type="range" id="input-speed" min="2" max="12" step="0.5" value="5" />
+                </div>
+
+                <!-- Turn Snap Angle -->
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span>VR Snap Turn Angle</span>
+                        <span id="label-snap">45°</span>
+                    </div>
+                    <input type="range" id="input-snap" min="15" max="90" step="15" value="45" />
+                </div>
+
+                <!-- Voice Speech Rate -->
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span>Voice Guidance Speed</span>
+                        <span id="label-speech">1.0x</span>
+                    </div>
+                    <input type="range" id="input-speech" min="0.7" max="1.5" step="0.1" value="1.0" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mute Float Toggle Button (2D desktop) -->
+    <div id="mute-toggle-2d" title="Toggle voice/audio chime guidance">
+        <svg class="icon-svg" viewBox="0 0 24 24" id="audio-svg-icon">
+            <!-- Unmuted Speaker Icon (Default) -->
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+    </div>
+
+    <!-- Desktop Fallback Controls Info Panel -->
+    <div id="desktop-instructions">
+        <div class="section-label" style="margin-bottom: 8px;">Desktop Simulator Controls</div>
+        <div class="instruction-item">
+            <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span>
+            <span>Move around city</span>
+        </div>
+        <div class="instruction-item">
+            <span class="key-cap">Mouse Drag</span>
+            <span>Look around environment</span>
+        </div>
+        <div class="instruction-item">
+            <span class="key-cap">Left Click</span>
+            <span>Select buttons / POI Pins</span>
+        </div>
+        <div class="instruction-item" style="color: var(--primary); font-weight: 500; margin-top: 6px;">
+            <span>Quest 3S: enter VR using bottom button!</span>
+        </div>
+    </div>
+
+    <!-- Real-time HUD Pop-up Alerts -->
+    <div id="alert-box">Navigation initialized</div>
+
+    <!-- Fallback WebXR Unavailable Message -->
+    <div id="xr-banner">
+        VR Mode requires a WebXR-compatible browser (e.g. Oculus Browser on Meta Quest 3S).
+    </div>
+
+    <!-- A-Frame 3D Scene Container -->
+    <div id="scene-container">
+        <!-- antialias: true, colorManagement: true for rich aesthetics and premium lighting -->
+        <a-scene id="vr-scene" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: false"
+            cursor="rayOrigin: mouse" raycaster="objects: .clickable" shadow="type: pcfsoft" vr-mode-ui="enabled: true">
+            
+            <a-assets>
+                <!-- We do not declare remote assets here to prevent CORS & offline errors. -->
+                <!-- Instead, procedural canvas materials will be injected via JS on scene load. -->
+            </a-assets>
+
+            <!-- Starry Night Skybox -->
+            <a-sky color="#04040a"></a-sky>
+
+            <!-- Stars Particle Field for Parallax Depth -->
+            <a-entity id="stars-field"></a-entity>
+
+            <!-- Ground plane with procedural glowing cyber-grid material -->
+            <a-plane id="ground-plane" position="0 0 0" rotation="-90 0 0" width="400" height="400"
+                color="#060713" material="roughness: 0.8; metalness: 0.1"></a-plane>
+
+            <!-- Ambient global lighting (cyan-indigo tint for cyberpunk feel) -->
+            <a-light type="ambient" color="#181832" intensity="1.5"></a-light>
+
+            <!-- Subtle directional moonlight casting soft shadows -->
+            <a-light type="directional" color="#00f2fe" intensity="0.8" position="30 80 -20" castShadow="false"></a-light>
+            <a-light type="directional" color="#7928ca" intensity="0.6" position="-30 80 20" castShadow="false"></a-light>
+
+            <!-- Procedural City Entity Group -->
+            <a-entity id="city-blocks"></a-entity>
+
+            <!-- Points of Interest Group (POI Pins) -->
+            <a-entity id="poi-group"></a-entity>
+
+            <!-- Active GPS Route Visualization Group -->
+            <a-entity id="active-route-group">
+                <!-- Connective tubes representing roads -->
+                <a-entity id="route-path-ribbons"></a-entity>
+                <!-- Waypoint indicators (vertical translucent beacons) -->
+                <a-entity id="route-waypoints"></a-entity>
+                <!-- Animated spheres scrolling along the route -->
+                <a-entity id="route-path-spheres"></a-entity>
+                <!-- Glowing pin on the final destination -->
+                <a-entity id="route-dest-pin"></a-entity>
+            </a-entity>
+
+            <!-- CAMERA RIG (Player Entity) -->
+            <!-- Spawn position corresponds to Node 1 (Tech Hub) at ground level height -->
+            <a-entity id="rig" position="-50 0 -55" rotation="0 0 0">
+                
+                <!-- Head Camera -->
+                <a-entity id="camera" camera look-controls="pointerLockEnabled: false" wasd-controls="enabled: false" position="0 1.6 0">
+                    
+                    <!-- Desktop Reticle/Cursor: Hidden when entering VR WebXR -->
+                    <a-cursor id="desktop-cursor" raycaster="objects: .clickable" 
+                        material="color: #00f2fe; shader: flat; opacity: 0.8" 
+                        position="0 0 -1" 
+                        geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015">
+                    </a-cursor>
+
+                    <!-- Dynamic VR Comfort Vignette ring (Darkens border during high-speed thumbstick movement) -->
+                    <a-ring id="comfort-vignette" position="0 0 -0.15" radius-inner="0.12" radius-outer="0.25"
+                        material="color: #000000; shader: flat; transparent: true; opacity: 0; depthTest: false"
+                        visible="false">
+                    </a-ring>
+                </a-entity>
+
+                <!-- VR Controllers Integration (Meta Quest 3S Controllers) -->
+                <!-- Left Hand Controller: Handles movement translation -->
+                <a-entity id="left-controller"
+                    laser-controls="hand: left"
+                    raycaster="objects: .clickable; far: 15; showLine: true"
+                    line="color: #00f2fe; opacity: 0.7; width: 0.005"
+                    oculus-touch-controls="hand: left"
+                    thumbstick-movement="rig: #rig; camera: #camera">
+                </a-entity>
+
+                <!-- Right Hand Controller: Handles Snap Turning and Clicking selection -->
+                <a-entity id="right-controller"
+                    laser-controls="hand: right"
+                    raycaster="objects: .clickable; far: 15; showLine: true"
+                    line="color: #7928ca; opacity: 0.7; width: 0.005"
+                    oculus-touch-controls="hand: right"
+                    thumbstick-rotation="rig: #rig">
+                </a-entity>
+
+            </a-entity> <!-- END CAMERA RIG -->
+
+            <!-- FLOATING VR HUD CONSOLE (Lazy follows the Camera position) -->
+            <a-entity id="vr-hud" lazy-follow="target: #camera">
+                
+                <!-- Visual 3D Holographic Minimap Panel (Floats right above the main console panel) -->
+                <a-entity id="mini-map" position="0 0.35 -0.1" rotation="-65 0 0">
+                    <!-- Base map plane -->
+                    <a-plane width="0.5" height="0.5" color="#050611" opacity="0.9" material="transparent: true; roughness: 0.9">
+                        <!-- Minimap glowing border line -->
+                        <a-ring radius-inner="0.245" radius-outer="0.25" color="#00f2fe" material="shader: flat"></a-ring>
+                        
+                        <!-- Mini road markings container -->
+                        <a-entity id="mini-roads"></a-entity>
+                        <!-- Mini POI marker dots container -->
+                        <a-entity id="mini-pois"></a-entity>
+                        <!-- Mini active route line path -->
+                        <a-entity id="mini-route-path"></a-entity>
+                        <!-- Mini player locator dot -->
+                        <a-sphere id="mini-player" radius="0.012" color="#10b981" material="shader: flat; emissive: #10b981; emissiveIntensity: 1.5"></a-sphere>
+                    </a-plane>
+                    <!-- Text Label above Minimap -->
+                    <a-text value="HOLOGRAPHIC CITY MAP" align="center" width="1.2" color="#00f2fe" position="0 0.27 0.01" font="mozillavr"></a-text>
+                </a-entity>
+
+                <!-- MAIN DASHBOARD PANEL -->
+                <!-- Base console panel background -->
+                <a-plane id="vr-dashboard-base" width="1.3" height="0.75" color="#080a15" opacity="0.95" rotation="-22 0 0" position="0 -0.05 0"
+                    material="transparent: true; roughness: 0.8; metalness: 0.2">
+                    <a-ring radius-inner="0.67" radius-outer="0.675" scale="1 0.58 1" color="#7928ca" material="shader: flat"></a-ring>
+
+                    <!-- Title Header -->
+                    <a-text value="VR NAVIGATION CONSOLE" align="center" width="2.2" color="#00f2fe" position="0 0.32 0.01" font="mozillavr"></a-text>
+
+                    <!-- LEFT HALF: TURN-BY-TURN GUIDANCE PANEL -->
+                    <!-- Background panel -->
+                    <a-plane width="0.56" height="0.48" color="#111424" opacity="0.9" position="-0.31 -0.02 0.005" material="transparent: true">
+                        <!-- Navigation Icon text -->
+                        <a-text id="vr-nav-icon" value="^" align="center" width="5" color="#00f2fe" position="0 0.16 0.01" font="mozillavr"></a-text>
+                        <!-- Instruction Text string -->
+                        <a-text id="vr-nav-instruction" value="Ready to Navigate.\nSelect destination..." align="center" width="1.6" color="#ffffff" position="0 0.02 0.01"></a-text>
+                        <!-- Next action details -->
+                        <a-text id="vr-nav-sub" value="Next: --" align="center" width="1.3" color="#9ca3af" position="0 -0.09 0.01"></a-text>
+                        
+                        <!-- Travel Stats: Remaining Dist / Remaining Time -->
+                        <a-plane width="0.48" height="0.08" color="#080a14" position="0 -0.18 0.01">
+                            <a-text id="vr-nav-stats" value="DIST: --m | ETA: --" align="center" width="1.4" color="#10b981" position="0 0 0.005" font="mozillavr"></a-text>
+                        </a-plane>
+                    </a-plane>
+
+                    <!-- RIGHT HALF: DESTINATION / CONTROL GRID BUTTONS -->
+                    <a-plane width="0.56" height="0.48" color="#111424" opacity="0.9" position="0.31 -0.02 0.005" material="transparent: true">
+                        <!-- Selection Title -->
+                        <a-text value="QUICK DESTINATIONS" align="center" width="1.5" color="#9ca3af" position="0 0.2 0.01"></a-text>
+
+                        <!-- Button grid: 6 locations -->
+                        <!-- Row 1 -->
+                        <a-plane id="vr-btn-hub" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="-0.17 0.1 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Tech Hub" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        </a-plane>
+                        <a-plane id="vr-btn-cafe" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="0 0.1 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Cafe Neon" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        </a-plane>
+                        <a-plane id="vr-btn-park" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="0.17 0.1 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Park" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        </a-plane>
+
+                        <!-- Row 2 -->
+                        <a-plane id="vr-btn-hosp" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="-0.17 -0.02 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Hospital" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        </a-plane>
+                        <a-plane id="vr-btn-station" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="0 -0.02 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Station" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        </a-plane>
+                        <a-plane id="vr-btn-airport" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="0.17 -0.02 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Airport" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        </a-plane>
+
+                        <!-- Controls below selection grid -->
+                        <a-plane id="vr-btn-toggle-view" class="clickable hover-glow" width="0.25" height="0.08" color="#2563eb" position="-0.13 -0.15 0.01" hover-glow="color: #60a5fa; originalColor: #2563eb">
+                            <a-text id="vr-txt-toggle-view" value="OVERVIEW MAP" align="center" width="1.2" color="white" position="0 0 0.005"></a-text>
+                        </a-plane>
+                        <a-plane id="vr-btn-mute" class="clickable hover-glow" width="0.25" height="0.08" color="#10b981" position="0.13 -0.15 0.01" hover-glow="color: #34d399; originalColor: #10b981">
+                            <a-text id="vr-txt-mute" value="MUTE VOICE" align="center" width="1.2" color="white" position="0 0 0.005"></a-text>
+                        </a-plane>
+                    </a-plane>
+
+                    <!-- CANCEL NAVIGATION BUTTON (Bottom bar) -->
+                    <a-plane id="vr-btn-stop" class="clickable hover-glow" width="0.35" height="0.07" color="#ef4444" position="0 -0.32 0.01" visible="false" hover-glow="color: #f87171; originalColor: #ef4444">
+                        <a-text value="CANCEL NAVIGATION" align="center" width="1.3" color="white" position="0 0 0.005"></a-text>
+                    </a-plane>
+                </a-plane>
+            </a-entity> <!-- END VR HUD -->
+
+        </a-scene>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // =========================================================================
+        // 1. DATA DEFINITIONS (CITY GRID, PATHFINDING GRAPH, POIS)
+        // =========================================================================
+        
+        // City Road Network Nodes
+        // Coordinates maps directly to streets
+        const NODES = {
+            "node1": { name: "Tech Blvd & North Ave", x: -50, z: -50 },
+            "node2": { name: "Main St & North Ave", x: 0, z: -50 },
+            "node3": { name: "East Rd & North Ave", x: 50, z: -50 },
+            "node4": { name: "Tech Blvd & Broadway", x: -50, z: 0 },
+            "node5": { name: "Main St & Broadway", x: 0, z: 0 },
+            "node6": { name: "East Rd & Broadway", x: 50, z: 0 },
+            "node7": { name: "Tech Blvd & South Ave", x: -50, z: 50 },
+            "node8": { name: "Main St & South Ave", x: 0, z: 50 },
+            "node9": { name: "East Rd & South Ave", x: 50, z: 50 },
+
+            // Point of Interest (POI) nodes
+            "tech_hub": { name: "Tech Hub Skyscraper", x: -50, z: -55, isPOI: true, category: "Office", desc: "Headquarters of Aetheria Tech with vertical cyan trims.", rating: "4.9" },
+            "hospital": { name: "General Hospital", x: 50, z: -55, isPOI: true, category: "Medical", desc: "Emergency medical facilities with 24/7 drone landing.", rating: "4.5" },
+            "airport": { name: "City Airport Terminal", x: 80, z: 0, isPOI: true, category: "Transit", desc: "Global airport with flight observation decks.", rating: "4.7" },
+            "station": { name: "Grand Station", x: -55, z: 55, isPOI: true, category: "Transit", desc: "Hyperloop terminal connecting major sectors.", rating: "4.4" },
+            "observatory": { name: "Skyline Observatory", x: 55, z: 55, isPOI: true, category: "Attraction", desc: "Observation tower overlooking the cybercity.", rating: "4.9" },
+            "cafe_neon": { name: "Cafe Neon", x: -10, z: -10, isPOI: true, category: "Food & Drink", desc: "Cozy neon café offering organic synthtea.", rating: "4.8" },
+            "academy": { name: "Future Academy", x: -25, z: -25, isPOI: true, category: "Education", desc: "Immersive VR science university.", rating: "4.6" },
+            "park": { name: "Central Park", x: 25, z: 25, isPOI: true, category: "Nature", desc: "Nature reserve featuring digital lakes and trees.", rating: "4.5" },
+            "retail": { name: "Retail Plaza", x: 0, z: 25, isPOI: true, category: "Shopping", desc: "Shopping strip with glowing commercial displays.", rating: "4.3" }
+        };
+
+        // Graph Edge Adjacency list (Bidirectional connections & edge weight/distance in meters)
+        const GRAPH = {
+            "node1": { "node2": 50, "node4": 50, "tech_hub": 5, "academy": 35 },
+            "node2": { "node1": 50, "node3": 50, "node5": 50 },
+            "node3": { "node2": 50, "node6": 50, "hospital": 5 },
+            "node4": { "node1": 50, "node5": 50, "node7": 50, "cafe_neon": 41, "academy": 35 },
+            "node5": { "node2": 50, "node4": 50, "node6": 50, "node8": 50, "cafe_neon": 14, "retail": 25 },
+            "node6": { "node3": 50, "node5": 50, "node9": 50, "airport": 30, "park": 35 },
+            "node7": { "node4": 50, "node8": 50, "station": 7 },
+            "node8": { "node5": 50, "node7": 50, "node9": 50, "retail": 25, "park": 35 },
+            "node9": { "node6": 50, "node8": 50, "observatory": 7, "park": 35 },
+
+            // POI nodes links back to intersections
+            "tech_hub": { "node1": 5 },
+            "hospital": { "node3": 5 },
+            "airport": { "node6": 30 },
+            "station": { "node7": 7 },
+            "observatory": { "node9": 7 },
+            "cafe_neon": { "node5": 14, "node4": 41 },
+            "academy": { "node1": 35, "node4": 35 },
+            "park": { "node8": 35, "node6": 35, "node9": 35 },
+            "retail": { "node5": 25, "node8": 25 }
+        };
+
+        // =========================================================================
+        // 2. DIJKSTRA PATHFINDING LOGIC
+        // =========================================================================
+        
+        class PriorityQueue {
+            constructor() {
+                this.values = [];
+            }
+            enqueue(val, priority) {
+                this.values.push({ val, priority });
+                this.sort();
+            }
+            dequeue() {
+                return this.values.shift();
+            }
+            sort() {
+                this.values.sort((a, b) => a.priority - b.priority);
+            }
+            isEmpty() {
+                return this.values.length === 0;
+            }
+        }
+
+        function calculateShortestPath(startNodeId, targetNodeId) {
+            const distances = {};
+            const previous = {};
+            const pq = new PriorityQueue();
+
+            // Initialize dists
+            for (const node in GRAPH) {
+                if (node === startNodeId) {
+                    distances[node] = 0;
+                    pq.enqueue(node, 0);
+                } else {
+                    distances[node] = Infinity;
+                }
+                previous[node] = null;
+            }
+
+            while (!pq.isEmpty()) {
+                const smallest = pq.dequeue().val;
+                if (smallest === targetNodeId) {
+                    break;
+                }
+
+                if (distances[smallest] === Infinity) continue;
+
+                for (const neighbor in GRAPH[smallest]) {
+                    const candidate = distances[smallest] + GRAPH[smallest][neighbor];
+                    if (candidate < distances[neighbor]) {
+                        distances[neighbor] = candidate;
+                        previous[neighbor] = smallest;
+                        pq.enqueue(neighbor, candidate);
+                    }
+                }
+            }
+
+            // Build path array
+            const path = [];
+            let current = targetNodeId;
+            while (current !== null) {
+                path.unshift(current);
+                current = previous[current];
+            }
+
+            return path[0] === startNodeId ? path : [];
+        }
+
+        // Find closest road node relative to current coordinates (x, z)
+        function findNearestNode(x, z) {
+            let nearestId = "node1";
+            let minDistance = Infinity;
+
+            for (const nodeId in NODES) {
+                const node = NODES[nodeId];
+                // Do not route directly to POI as intersection unless it is very close
+                const dist = Math.sqrt((x - node.x) ** 2 + (z - node.z) ** 2);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearestId = nodeId;
+                }
+            }
+            return nearestId;
+        }
+
+        // =========================================================================
+        // 3. CUSTOM A-FRAME COMPONENTS DEFINITIONS
+        // =========================================================================
+        
+        // Meta Quest 3S Controller: Locomotion movement (Left Thumbstick)
+        AFRAME.registerComponent('thumbstick-movement', {
+            schema: {
+                rig: { type: 'selector', default: '#rig' },
+                camera: { type: 'selector', default: '#camera' },
+                speed: { type: 'number', default: 5 } // speed updated dynamically from slider
+            },
+            init: function () {
+                this.axis = [0, 0];
+                this.el.addEventListener('axismove', (evt) => {
+                    this.axis[0] = evt.detail.axis[0]; // X axis (left/right)
+                    this.axis[1] = evt.detail.axis[1]; // Y axis (forward/backward)
+                });
+            },
+            tick: function (time, timeDelta) {
+                if (!timeDelta || window.isOverview || window.inTransition) return;
+                
+                const x = this.axis[0];
+                const y = this.axis[1];
+                if (Math.abs(x) < 0.05 && Math.abs(y) < 0.05) return;
+
+                const rig = this.data.rig;
+                const camera = this.data.camera;
+                const speed = window.movementSpeed * (timeDelta / 1000);
+
+                // Get camera forward direction projected on horizontal XZ plane
+                const dir = new THREE.Vector3();
+                camera.object3D.getWorldDirection(dir);
+                dir.multiplyScalar(-1); // THREE camera looks backwards
+                dir.y = 0;
+                dir.normalize();
+
+                // Get camera right direction projected on horizontal XZ plane
+                const right = new THREE.Vector3();
+                right.crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
+
+                // Compute motion vector
+                const moveVector = new THREE.Vector3();
+                moveVector.addScaledVector(dir, -y * speed); // In A-Frame, gamepad push forward is negative Y axis
+                moveVector.addScaledVector(right, x * speed);
+
+                // Move Rig
+                rig.object3D.position.add(moveVector);
+
+                // Boundary Limits (keeps user within grid bounds)
+                rig.object3D.position.x = Math.max(-80, Math.min(95, rig.object3D.position.x));
+                rig.object3D.position.z = Math.max(-80, Math.min(80, rig.object3D.position.z));
+            }
+        });
+
+        // Meta Quest 3S Controller: Snap Turning rotation (Right Thumbstick)
+        AFRAME.registerComponent('thumbstick-rotation', {
+            schema: {
+                rig: { type: 'selector', default: '#rig' }
+            },
+            init: function () {
+                this.axisX = 0;
+                this.lastSnapTime = 0;
+                this.el.addEventListener('axismove', (evt) => {
+                    this.axisX = evt.detail.axis[0]; // horizontal axis
+                });
+            },
+            tick: function (time, timeDelta) {
+                if (window.isOverview || window.inTransition) return;
+                
+                const now = Date.now();
+                const cooldown = 350; // ms between snap turns
+                
+                if (now - this.lastSnapTime < cooldown) return;
+                
+                if (Math.abs(this.axisX) > 0.6) {
+                    const rig = this.data.rig;
+                    const direction = -Math.sign(this.axisX); // -1 for turn left, +1 for turn right
+                    const angleRad = direction * window.snapTurnAngle * Math.PI / 180;
+                    
+                    rig.object3D.rotateY(angleRad);
+                    this.lastSnapTime = now;
+
+                    // Controller haptics tick
+                    try {
+                        const controller = this.el.components['tracked-controls'].controller;
+                        if (controller && controller.hapticActuators && controller.hapticActuators.length > 0) {
+                            controller.hapticActuators[0].play(0.1, 50);
+                        }
+                    } catch (e) {}
+                }
+            }
+        });
+
+        // Comfort Vignette component: Monitors locomotion speed and dims screen edges to prevent VR sickness
+        AFRAME.registerComponent('comfort-vignette', {
+            schema: {
+                rig: { type: 'selector', default: '#rig' }
+            },
+            init: function () {
+                this.lastPos = new THREE.Vector3();
+                this.data.rig.object3D.getWorldPosition(this.lastPos);
+                this.opacity = 0;
+            },
+            tick: function (time, timeDelta) {
+                if (!timeDelta) return;
+                const currentPos = new THREE.Vector3();
+                this.data.rig.object3D.getWorldPosition(currentPos);
+
+                const distance = currentPos.distanceTo(this.lastPos);
+                const velocity = distance / (timeDelta / 1000);
+                this.lastPos.copy(currentPos);
+
+                let targetOpacity = 0;
+                if (velocity > 0.5 && !window.isOverview) {
+                    // Fade in vignette relative to speed
+                    targetOpacity = Math.min(0.55, (velocity - 0.5) * 0.12);
+                }
+
+                // Smooth interpolation
+                this.opacity += (targetOpacity - this.opacity) * 0.15;
+
+                if (this.opacity > 0.02) {
+                    this.el.setAttribute('visible', 'true');
+                    this.el.setAttribute('material', 'opacity', this.opacity);
+                } else {
+                    this.el.setAttribute('visible', 'false');
+                }
+            }
+        });
+
+        // Lazy-Follow: Comfort-friendly tagalong for floating VR console dashboard
+        AFRAME.registerComponent('lazy-follow', {
+            schema: {
+                target: { type: 'selector', default: '#camera' },
+                distance: { type: 'number', default: 1.45 },
+                heightOffset: { type: 'number', default: -0.45 },
+                speed: { type: 'number', default: 4.5 }
+            },
+            init: function () {
+                // Initialize console in front of camera
+                const target = this.data.target;
+                if (target) {
+                    const pos = new THREE.Vector3();
+                    target.object3D.getWorldPosition(pos);
+                    this.el.object3D.position.copy(pos);
+                }
+            },
+            tick: function (time, timeDelta) {
+                if (!timeDelta || window.isOverview) {
+                    // Hide dashboard when in overview mode
+                    if (this.el.object3D.visible) this.el.setAttribute('visible', 'false');
+                    return;
+                }
+                
+                if (!this.el.object3D.visible) this.el.setAttribute('visible', 'true');
+
+                const target = this.data.target;
+                if (!target) return;
+
+                // Position console in front of target camera view vector
+                const camDir = new THREE.Vector3();
+                target.object3D.getWorldDirection(camDir);
+                camDir.multiplyScalar(-1); // Reverse direction (THREE camera is negative Z)
+
+                const targetPos = new THREE.Vector3();
+                target.object3D.getWorldPosition(targetPos);
+                targetPos.addScaledVector(camDir, this.data.distance);
+                targetPos.y += this.data.heightOffset;
+
+                // Lerp position
+                const factor = this.data.speed * (timeDelta / 1000);
+                this.el.object3D.position.lerp(targetPos, Math.min(factor, 1));
+
+                // Rotate to face camera on Y axis (always upright)
+                const camPos = new THREE.Vector3();
+                target.object3D.getWorldPosition(camPos);
+                const lookPos = new THREE.Vector3(camPos.x, this.el.object3D.position.y, camPos.z);
+                this.el.object3D.lookAt(lookPos);
+            }
+        });
+
+        // Billboard component: Rotates text tags/signs around Y axis to face the camera
+        AFRAME.registerComponent('billboard', {
+            schema: {
+                target: { type: 'selector', default: '#camera' }
+            },
+            tick: function () {
+                const target = this.data.target;
+                if (!target) return;
+                
+                const targetPos = new THREE.Vector3();
+                target.object3D.getWorldPosition(targetPos);
+                
+                const currentPos = new THREE.Vector3();
+                this.el.object3D.getWorldPosition(currentPos);
+                
+                const lookPos = new THREE.Vector3(targetPos.x, currentPos.y, targetPos.z);
+                this.el.object3D.lookAt(lookPos);
+            }
+        });
+
+        // Animated guidance spheres sliding along route segments
+        AFRAME.registerComponent('animated-path-spheres', {
+            schema: {
+                pA: { type: 'vec3' },
+                pB: { type: 'vec3' },
+                speed: { type: 'number', default: 4 },
+                count: { type: 'number', default: 3 }
+            },
+            init: function () {
+                this.spheres = [];
+                const vecA = new THREE.Vector3(this.data.pA.x, this.data.pA.y, this.data.pA.z);
+                const vecB = new THREE.Vector3(this.data.pB.x, this.data.pB.y, this.data.pB.z);
+                this.distance = vecA.distanceTo(vecB);
+
+                // Create individual glowing spheres along path segment
+                for (let i = 0; i < this.data.count; i++) {
+                    const sphere = document.createElement('a-sphere');
+                    sphere.setAttribute('radius', '0.12');
+                    sphere.setAttribute('material', 'shader: flat; color: #00f2fe; transparent: true; opacity: 0.8');
+                    this.el.appendChild(sphere);
+
+                    this.spheres.push({
+                        el: sphere,
+                        progress: i / this.data.count // distribute progress evenly
+                    });
+                }
+            },
+            tick: function (time, timeDelta) {
+                if (!timeDelta) return;
+                const rate = (this.data.speed * (timeDelta / 1000)) / this.distance;
+                const vecA = new THREE.Vector3(this.data.pA.x, this.data.pA.y, this.data.pA.z);
+                const vecB = new THREE.Vector3(this.data.pB.x, this.data.pB.y, this.data.pB.z);
+
+                this.spheres.forEach(s => {
+                    s.progress += rate;
+                    if (s.progress > 1) s.progress -= 1; // loop back to start
+
+                    const pos = new THREE.Vector3().lerpVectors(vecA, vecB, s.progress);
+                    pos.y += 0.1; // hover slightly above the road surface
+                    s.el.object3D.position.copy(pos);
+                });
+            }
+        });
+
+        // Hover Glow component: Scales up and highlights clickable 3D elements
+        AFRAME.registerComponent('hover-glow', {
+            schema: {
+                color: { type: 'string', default: '#00f2fe' },
+                originalColor: { type: 'string', default: '#1e294b' },
+                scale: { type: 'number', default: 1.15 }
+            },
+            init: function () {
+                this.originalScale = this.el.object3D.scale.clone();
+                this.el.addEventListener('mouseenter', () => {
+                    this.el.setAttribute('material', 'color', this.data.color);
+                    this.el.object3D.scale.set(
+                        this.originalScale.x * this.data.scale,
+                        this.originalScale.y * this.data.scale,
+                        this.originalScale.z * this.data.scale
+                    );
+                    playChime('click');
+                });
+                this.el.addEventListener('mouseleave', () => {
+                    this.el.setAttribute('material', 'color', this.data.originalColor);
+                    this.el.object3D.scale.copy(this.originalScale);
+                });
+            }
+        });
+
+        // =========================================================================
+        // 4. PROCEDURAL SOUND SYNTHESIS (WEB AUDIO API) & VOICE GUIDE (TTS)
+        // =========================================================================
+        
+        let audioCtx = null;
+        window.audioMuted = false;
+        window.speechSpeed = 1.0;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Synthesize direct feedback audio chimes (no asset load needed)
+        function playChime(type) {
+            if (window.audioMuted) return;
+            try {
+                initAudioContext();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+                
+                if (type === 'start') {
+                    // Double tone up
+                    createSynthesizerTone(523.25, 0.15, now);
+                    createSynthesizerTone(659.25, 0.25, now + 0.12);
+                } else if (type === 'waypoint') {
+                    // Crystal bell ring
+                    createSynthesizerTone(880.00, 0.4, now, 0.25);
+                } else if (type === 'arrive') {
+                    // Triad success arpeggio
+                    createSynthesizerTone(523.25, 0.18, now);
+                    createSynthesizerTone(659.25, 0.18, now + 0.08);
+                    createSynthesizerTone(783.99, 0.18, now + 0.16);
+                    createSynthesizerTone(1046.50, 0.45, now + 0.24, 0.25);
+                } else if (type === 'recalculate') {
+                    // Low tone warning
+                    createSynthesizerTone(220.00, 0.2, now, 0.25);
+                    createSynthesizerTone(196.00, 0.3, now + 0.15, 0.25);
+                } else if (type === 'click') {
+                    // Tiny click sound
+                    createSynthesizerTone(1500, 0.03, now, 0.06);
+                }
+            } catch (e) {
+                console.warn("Audio chime failed to synthesize:", e);
+            }
+        }
+
+        function createSynthesizerTone(frequency, duration, startTime, maxGain = 0.2) {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(frequency, startTime);
+
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(maxGain, startTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.05);
+        }
+
+        // TTS voice guidance module (Web Speech API)
+        function announceDirection(text) {
+            if (window.audioMuted) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Mute ongoing guidance to avoid overlaps
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = window.speechSpeed;
+                utterance.pitch = 1.05; // Sleek futuristic assistant voice
+                
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // =========================================================================
+        // 5. PROCEDURAL CITY SCENE GENERATOR
+        // =========================================================================
+        
+        function generateProceduralCity() {
+            const cityContainer = document.querySelector('#city-blocks');
+            const poiContainer = document.querySelector('#poi-group');
+            const miniRoads = document.querySelector('#mini-roads');
+            const miniPois = document.querySelector('#mini-pois');
+
+            // 5.1. Generate Ground Cyber-grid pattern texture
+            const gridCanvas = document.createElement('canvas');
+            gridCanvas.width = 128;
+            gridCanvas.height = 128;
+            const ctx = gridCanvas.getContext('2d');
+            ctx.fillStyle = '#060713';
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.strokeStyle = '#1e244d';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0, 0, 128, 128);
+            // Minor grid lines
+            ctx.strokeStyle = '#0e1124';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(32, 0); ctx.lineTo(32, 128);
+            ctx.moveTo(64, 0); ctx.lineTo(64, 128);
+            ctx.moveTo(96, 0); ctx.lineTo(96, 128);
+            ctx.moveTo(0, 32); ctx.lineTo(128, 32);
+            ctx.moveTo(0, 64); ctx.lineTo(128, 64);
+            ctx.moveTo(0, 96); ctx.lineTo(128, 96);
+            ctx.stroke();
+
+            const gridUrl = gridCanvas.toDataURL();
+            document.querySelector('#ground-plane').setAttribute('material', `src: ${gridUrl}; repeat: 120 120; roughness: 0.9; metalness: 0.1`);
+
+            // 5.2. Generate Star Particle Field (background atmosphere)
+            const starsField = document.querySelector('#stars-field');
+            for (let i = 0; i < 350; i++) {
+                const star = document.createElement('a-sphere');
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+                const radius = 180 + Math.random() * 20;
+
+                const sx = radius * Math.sin(phi) * Math.cos(theta);
+                const sy = Math.max(15, radius * Math.sin(phi) * Math.sin(theta)); // keep stars above ground
+                const sz = radius * Math.cos(phi);
+
+                star.setAttribute('position', `${sx} ${sy} ${sz}`);
+                star.setAttribute('radius', `${0.15 + Math.random() * 0.25}`);
+                star.setAttribute('material', `shader: flat; color: #fff; transparent: true; opacity: ${0.3 + Math.random() * 0.7}`);
+                starsField.appendChild(star);
+            }
+
+            // 5.3. Generate Procedural Window textures
+            // Cyan neon windows
+            const winCyanCanvas = document.createElement('canvas');
+            winCyanCanvas.width = 64; winCyanCanvas.height = 128;
+            const cCtx = winCyanCanvas.getContext('2d');
+            cCtx.fillStyle = 'rgba(0,0,0,0)'; cCtx.fillRect(0,0,64,128);
+            cCtx.fillStyle = '#00f2fe';
+            for (let y = 6; y < 128; y += 14) {
+                for (let x = 6; x < 64; x += 14) {
+                    if (Math.random() > 0.2) cCtx.fillRect(x, y, 7, 7);
+                }
+            }
+            const winCyanUrl = winCyanCanvas.toDataURL();
+
+            // Amber windows
+            const winAmberCanvas = document.createElement('canvas');
+            winAmberCanvas.width = 64; winAmberCanvas.height = 128;
+            const aCtx = winAmberCanvas.getContext('2d');
+            aCtx.fillStyle = 'rgba(0,0,0,0)'; aCtx.fillRect(0,0,64,128);
+            aCtx.fillStyle = '#ffbd59';
+            for (let y = 6; y < 128; y += 14) {
+                for (let x = 6; x < 64; x += 14) {
+                    if (Math.random() > 0.2) aCtx.fillRect(x, y, 7, 7);
+                }
+            }
+            const winAmberUrl = winAmberCanvas.toDataURL();
+
+            // 5.4. Define Roads Details & Sidewalks
+            // Road segments definitions
+            const roadSegments = [
+                // North-South Main Roads
+                { x: -50, z: 0, length: 170, rotY: 0, name: "Tech Boulevard", w: 8 },
+                { x: 0, z: 0, length: 170, rotY: 0, name: "Main Street", w: 8 },
+                { x: 50, z: 0, length: 170, rotY: 0, name: "East Road", w: 8 },
+                // East-West Main Roads
+                { x: 0, z: -50, length: 170, rotY: 90, name: "North Avenue", w: 8 },
+                { x: 0, z: 0, length: 170, rotY: 90, name: "Broadway", w: 8 },
+                { x: 0, z: 50, length: 170, rotY: 90, name: "South Avenue", w: 8 },
+                // Special Access Paths
+                { x: 65, z: 0, length: 30, rotY: 90, name: "Airport Boulevard", w: 6 }
+            ];
+
+            // Render Road planes and sidewalks in 3D & in Holographic minimap
+            roadSegments.forEach(road => {
+                // A. Render 3D Road Floor
+                const rPlane = document.createElement('a-plane');
+                rPlane.setAttribute('width', road.w);
+                rPlane.setAttribute('height', road.length);
+                rPlane.setAttribute('position', `${road.x} 0.015 ${road.z}`);
+                rPlane.setAttribute('rotation', `-90 ${road.rotY} 0`);
+                rPlane.setAttribute('material', 'color: #12121c; roughness: 0.85');
+                cityContainer.appendChild(rPlane);
+
+                // B. Render Lane markings (Procedural dashed yellow/cyan canvas line)
+                const centerLine = document.createElement('a-plane');
+                centerLine.setAttribute('width', '0.12');
+                centerLine.setAttribute('height', road.length);
+                centerLine.setAttribute('position', `${road.x} 0.018 ${road.z}`);
+                centerLine.setAttribute('rotation', `-90 ${road.rotY} 0`);
+                // Generate simple dashed texture
+                const dashCanvas = document.createElement('canvas');
+                dashCanvas.width = 4; dashCanvas.height = 32;
+                const dCtx = dashCanvas.getContext('2d');
+                dCtx.fillStyle = 'rgba(0,0,0,0)'; dCtx.fillRect(0,0,4,32);
+                dCtx.fillStyle = '#00f2fe'; dCtx.fillRect(1, 4, 2, 10);
+                dCtx.fillRect(1, 20, 2, 10);
+                centerLine.setAttribute('material', `src: ${dashCanvas.toDataURL()}; repeat: 1 ${road.length / 8}; transparent: true; shader: flat`);
+                cityContainer.appendChild(centerLine);
+
+                // C. Render Sidewalk borders (raised blocks)
+                const sidewalkLeft = document.createElement('a-box');
+                const sidewalkRight = document.createElement('a-box');
+                const swWidth = 1.0;
+                const swHeight = 0.08;
+
+                // Calculate orientation offset vectors
+                const dx = Math.sin(road.rotY * Math.PI / 180) * (road.w / 2 + swWidth / 2);
+                const dz = Math.cos(road.rotY * Math.PI / 180) * (road.w / 2 + swWidth / 2);
+
+                sidewalkLeft.setAttribute('width', swWidth);
+                sidewalkLeft.setAttribute('height', swHeight);
+                sidewalkLeft.setAttribute('depth', road.length);
+                sidewalkLeft.setAttribute('position', `${road.x - dz} ${swHeight/2} ${road.z - dx}`);
+                sidewalkLeft.setAttribute('rotation', `0 ${road.rotY} 0`);
+                sidewalkLeft.setAttribute('material', 'color: #272836; roughness: 0.7');
+                cityContainer.appendChild(sidewalkLeft);
+
+                sidewalkRight.setAttribute('width', swWidth);
+                sidewalkRight.setAttribute('height', swHeight);
+                sidewalkRight.setAttribute('depth', road.length);
+                sidewalkRight.setAttribute('position', `${road.x + dz} ${swHeight/2} ${road.z + dx}`);
+                sidewalkRight.setAttribute('rotation', `0 ${road.rotY} 0`);
+                sidewalkRight.setAttribute('material', 'color: #272836; roughness: 0.7');
+                cityContainer.appendChild(sidewalkRight);
+
+                // D. Render road inside Holographic Minimap
+                const miniRoad = document.createElement('a-plane');
+                // Scale factor: 1/200
+                miniRoad.setAttribute('width', `${road.w / 200}`);
+                miniRoad.setAttribute('height', `${road.length / 200}`);
+                miniRoad.setAttribute('position', `${road.x / 200} 0.002 ${road.z / 200}`);
+                miniRoad.setAttribute('rotation', `-90 ${road.rotY} 0`);
+                miniRoad.setAttribute('material', 'color: #223067; shader: flat; transparent: true; opacity: 0.8');
+                miniRoads.appendChild(miniRoad);
+            });
+
+            // 5.5. Place Standard Office & Residential Buildings
+            // Loop grid and spawn boxes, skipping regions reserved for landmarks
+            const buildingGrid = [
+                // NW Block 1
+                { x: -35, z: -35 }, { x: -18, z: -35 },
+                { x: -35, z: -18 }, { x: -18, z: -18 },
+                // NE Block 1
+                { x: 18, z: -35 }, { x: 35, z: -35 },
+                { x: 18, z: -18 }, { x: 35, z: -18 },
+                // SW Block 1
+                { x: -35, z: 35 }, { x: -18, z: 35 },
+                { x: -35, z: 18 }, { x: -18, z: 18 },
+                // Peripheral outer buildings (creates metropolis background depth)
+                { x: -65, z: -65 }, { x: -65, z: -35 }, { x: -65, z: 0 }, { x: -65, z: 35 }, { x: -65, z: 65 },
+                { x: 65, z: -65 }, { x: 65, z: -35 }, { x: 65, z: 35 }, { x: 65, z: 65 },
+                { x: -35, z: -65 }, { x: 0, z: -65 }, { x: 35, z: -65 },
+                { x: -35, z: 65 }, { x: 0, z: 65 }, { x: 35, z: 65 }
+            ];
+
+            buildingGrid.forEach((coord, index) => {
+                const height = 15 + Math.random() * 20;
+                const width = 10 + Math.random() * 4;
+                const depth = 10 + Math.random() * 4;
+                const isCyanStyle = index % 2 === 0;
+
+                // Base block
+                const building = document.createElement('a-box');
+                building.setAttribute('width', width);
+                building.setAttribute('height', height);
+                building.setAttribute('depth', depth);
+                building.setAttribute('position', `${coord.x} ${height / 2} ${coord.z}`);
+                building.setAttribute('material', 'color: #141727; roughness: 0.6; metalness: 0.3');
+                cityContainer.appendChild(building);
+
+                // Add glowing windows on building faces (planes slightly offset by 0.05m to prevent Z-fighting)
+                const winTex = isCyanStyle ? winCyanUrl : winAmberUrl;
+                const offsets = [
+                    { x: 0, z: depth/2 + 0.02, rotY: 0 },
+                    { x: 0, z: -depth/2 - 0.02, rotY: 180 },
+                    { x: width/2 + 0.02, z: 0, rotY: 90 },
+                    { x: -width/2 - 0.02, z: 0, rotY: -90 }
+                ];
+
+                offsets.forEach(off => {
+                    const face = document.createElement('a-plane');
+                    face.setAttribute('width', `${width * 0.8}`);
+                    face.setAttribute('height', `${height * 0.85}`);
+                    face.setAttribute('position', `${coord.x + off.x} ${height/2} ${coord.z + off.z}`);
+                    face.setAttribute('rotation', `0 ${off.rotY} 0`);
+                    face.setAttribute('material', `src: ${winTex}; transparent: true; shader: flat; repeat: ${Math.round(width/3)} ${Math.round(height/4)}`);
+                    cityContainer.appendChild(face);
+                });
+
+                // Top neon trim line
+                const trim = document.createElement('a-box');
+                trim.setAttribute('width', `${width + 0.1}`);
+                trim.setAttribute('height', '0.25');
+                trim.setAttribute('depth', `${depth + 0.1}`);
+                trim.setAttribute('position', `${coord.x} ${height} ${coord.z}`);
+                trim.setAttribute('material', `shader: flat; color: ${isCyanStyle ? '#00f2fe' : '#ffbd59'}`);
+                cityContainer.appendChild(trim);
+            });
+
+            // 5.6. Render Special Landmark Buildings
+            // A. Tech Hub Skyscraper (Start - northwest corner)
+            const techHubEntity = document.createElement('a-entity');
+            techHubEntity.setAttribute('position', '-50 0 -55');
+            // Base layer
+            const tBase = document.createElement('a-box');
+            tBase.setAttribute('width', '16'); tBase.setAttribute('height', '40'); tBase.setAttribute('depth', '16');
+            tBase.setAttribute('material', 'color: #0b0c16; roughness: 0.4');
+            techHubEntity.appendChild(tBase);
+            // Inset windows
+            const tWin = document.createElement('a-plane');
+            tWin.setAttribute('width', '14'); tWin.setAttribute('height', '36'); tWin.setAttribute('position', '0 20 8.02');
+            tWin.setAttribute('material', `src: ${winCyanUrl}; transparent: true; shader: flat; repeat: 4 10`);
+            techHubEntity.appendChild(tWin);
+            // Mid stack
+            const tMid = document.createElement('a-box');
+            tMid.setAttribute('width', '12'); tMid.setAttribute('height', '20'); tMid.setAttribute('depth', '12');
+            tMid.setAttribute('position', '0 30 0');
+            tMid.setAttribute('material', 'color: #121424; roughness: 0.4');
+            techHubEntity.appendChild(tMid);
+            // Antenna needle & red warning beacon
+            const tBeacon = document.createElement('a-cone');
+            tBeacon.setAttribute('radius-bottom', '0.15'); tBeacon.setAttribute('height', '8');
+            tBeacon.setAttribute('position', '0 44 0');
+            tBeacon.setAttribute('material', 'shader: flat; color: #ff2d55');
+            techHubEntity.appendChild(tBeacon);
+            cityContainer.appendChild(techHubEntity);
+
+            // B. General Hospital (Northeast corner)
+            const hospBase = document.createElement('a-box');
+            hospBase.setAttribute('width', '24'); hospBase.setAttribute('height', '14'); hospBase.setAttribute('depth', '16');
+            hospBase.setAttribute('position', '50 7 -55');
+            hospBase.setAttribute('material', 'color: #272c3d; roughness: 0.8');
+            cityContainer.appendChild(hospBase);
+            // Red Glowing cross on hospital front
+            const crossH = document.createElement('a-box');
+            crossH.setAttribute('width', '4'); crossH.setAttribute('height', '1'); crossH.setAttribute('depth', '0.2');
+            crossH.setAttribute('position', '50 7 -46.9');
+            crossH.setAttribute('material', 'shader: flat; color: #ef4444; emissive: #ef4444');
+            const crossV = document.createElement('a-box');
+            crossV.setAttribute('width', '1'); crossV.setAttribute('height', '4'); crossV.setAttribute('depth', '0.2');
+            crossV.setAttribute('position', '50 7 -46.9');
+            crossV.setAttribute('material', 'shader: flat; color: #ef4444; emissive: #ef4444');
+            cityContainer.appendChild(crossH);
+            cityContainer.appendChild(crossV);
+
+            // C. Grand Station (Southwest corner)
+            const stationTerminal = document.createElement('a-cylinder');
+            stationTerminal.setAttribute('radius', '8'); stationTerminal.setAttribute('height', '22');
+            stationTerminal.setAttribute('rotation', '90 0 90'); stationTerminal.setAttribute('position', '-55 6 55');
+            stationTerminal.setAttribute('material', 'color: #0b0c16; transparent: true; opacity: 0.7; side: double');
+            cityContainer.appendChild(stationTerminal);
+
+            // D. City Airport Terminal & Control Tower (Far East node)
+            const airportTerminal = document.createElement('a-box');
+            airportTerminal.setAttribute('width', '20'); airportTerminal.setAttribute('height', '8'); airportTerminal.setAttribute('depth', '25');
+            airportTerminal.setAttribute('position', '80 4 0');
+            airportTerminal.setAttribute('material', 'color: #24293c; roughness: 0.7');
+            cityContainer.appendChild(airportTerminal);
+            // Airport Runway
+            const runway = document.createElement('a-plane');
+            runway.setAttribute('width', '6'); runway.setAttribute('height', '60');
+            runway.setAttribute('position', '92 0.02 0'); runway.setAttribute('rotation', '-90 0 0');
+            runway.setAttribute('material', 'color: #0c0c10; roughness: 0.9');
+            cityContainer.appendChild(runway);
+            // Runway lights
+            for (let z = -30; z <= 30; z += 10) {
+                const lightL = document.createElement('a-sphere');
+                const lightR = document.createElement('a-sphere');
+                lightL.setAttribute('radius', '0.15'); lightL.setAttribute('position', `88.8 0.08 ${z}`);
+                lightL.setAttribute('material', 'shader: flat; color: #10b981');
+                lightR.setAttribute('radius', '0.15'); lightR.setAttribute('position', `95.2 0.08 ${z}`);
+                lightR.setAttribute('material', 'shader: flat; color: #10b981');
+                cityContainer.appendChild(lightL);
+                cityContainer.appendChild(lightR);
+            }
+
+            // E. Skyline Observatory (Southeast corner dome on top of hill)
+            const hill = document.createElement('a-cone');
+            hill.setAttribute('radius-bottom', '12'); hill.setAttribute('radius-top', '8'); hill.setAttribute('height', '6');
+            hill.setAttribute('position', '55 3 55');
+            hill.setAttribute('material', 'color: #1c2033; roughness: 0.9');
+            cityContainer.appendChild(hill);
+            const dome = document.createElement('a-sphere');
+            dome.setAttribute('radius', '4.5'); dome.setAttribute('position', '55 6 55');
+            dome.setAttribute('material', 'color: #4b5563; metalness: 0.8; roughness: 0.2');
+            cityContainer.appendChild(dome);
+
+            // F. Central Park (SE Block)
+            const parkLawn = document.createElement('a-plane');
+            parkLawn.setAttribute('width', '35'); parkLawn.setAttribute('height', '35');
+            parkLawn.setAttribute('position', '25 0.02 25'); parkLawn.setAttribute('rotation', '-90 0 0');
+            parkLawn.setAttribute('material', 'color: #064e3b; roughness: 0.9');
+            cityContainer.appendChild(parkLawn);
+            // Digital Lake
+            const lake = document.createElement('a-cylinder');
+            lake.setAttribute('radius', '6'); lake.setAttribute('height', '0.04');
+            lake.setAttribute('position', '25 0.03 25');
+            lake.setAttribute('material', 'shader: flat; color: #00f2fe; transparent: true; opacity: 0.6');
+            cityContainer.appendChild(lake);
+            // Scatter 3D trees
+            const treePositions = [
+                { x: 12, z: 12 }, { x: 38, z: 12 }, { x: 12, z: 38 }, { x: 38, z: 38 },
+                { x: 25, z: 12 }, { x: 25, z: 38 }, { x: 12, z: 25 }, { x: 38, z: 25 }
+            ];
+            treePositions.forEach(pos => {
+                // Trunk
+                const trunk = document.createElement('a-cylinder');
+                trunk.setAttribute('radius', '0.15'); trunk.setAttribute('height', '2.5');
+                trunk.setAttribute('position', `${pos.x} 1.25 ${pos.z}`);
+                trunk.setAttribute('material', 'color: #78350f; roughness: 0.9');
+                cityContainer.appendChild(trunk);
+                // Leaves (low-poly teal sphere)
+                const foliage = document.createElement('a-sphere');
+                foliage.setAttribute('radius', '1.3');
+                foliage.setAttribute('position', `${pos.x} 2.8 ${pos.z}`);
+                foliage.setAttribute('material', 'color: #10b981; roughness: 0.8');
+                cityContainer.appendChild(foliage);
+            });
+
+            // G. Cafe Neon (Cozy building NW of center intersection)
+            const cafe = document.createElement('a-box');
+            cafe.setAttribute('width', '8'); cafe.setAttribute('height', '6'); cafe.setAttribute('depth', '8');
+            cafe.setAttribute('position', '-10 3 -10');
+            cafe.setAttribute('material', 'color: #1a1b2f; roughness: 0.7');
+            cityContainer.appendChild(cafe);
+            // Magenta Neon Sign
+            const signPlane = document.createElement('a-plane');
+            signPlane.setAttribute('width', '3'); signPlane.setAttribute('height', '1');
+            signPlane.setAttribute('position', '-10 4.5 -5.98');
+            signPlane.setAttribute('material', 'shader: flat; color: #ff007f; emissive: #ff007f');
+            const signTxt = document.createElement('a-text');
+            signTxt.setAttribute('value', 'CAFE'); signTxt.setAttribute('align', 'center');
+            signTxt.setAttribute('width', '6'); signTxt.setAttribute('position', '0 0 0.02');
+            signPlane.appendChild(signTxt);
+            cityContainer.appendChild(signPlane);
+
+            // H. Future Academy (Circular dome NW block)
+            const academyWall = document.createElement('a-cylinder');
+            academyWall.setAttribute('radius', '8'); academyWall.setAttribute('height', '6');
+            academyWall.setAttribute('position', '-25 3 -25');
+            academyWall.setAttribute('material', 'color: #2e304f; roughness: 0.6');
+            cityContainer.appendChild(academyWall);
+            const academyDome = document.createElement('a-sphere');
+            academyDome.setAttribute('radius', '8'); academyDome.setAttribute('position', '-25 6 -25');
+            academyDome.setAttribute('scale', '1 0.4 1');
+            academyDome.setAttribute('material', 'shader: flat; color: #00f2fe; transparent: true; opacity: 0.4; side: double');
+            cityContainer.appendChild(academyDome);
+
+            // I. Retail Plaza (shopping strip)
+            const plaza = document.createElement('a-box');
+            plaza.setAttribute('width', '24'); plaza.setAttribute('height', '5'); plaza.setAttribute('depth', '6');
+            plaza.setAttribute('position', '0 2.5 25');
+            plaza.setAttribute('material', 'color: #1f223a; roughness: 0.8');
+            cityContainer.appendChild(plaza);
+            // Glowing store window displays
+            for (let shopX = -8; shopX <= 8; shopX += 8) {
+                const display = document.createElement('a-plane');
+                display.setAttribute('width', '4'); display.setAttribute('height', '2.5');
+                display.setAttribute('position', `${shopX} 1.25 3.01`);
+                display.setAttribute('material', `shader: flat; color: ${shopX === 0 ? '#ffbd59' : '#00f2fe'}; transparent: true; opacity: 0.8`);
+                plaza.appendChild(display);
+            }
+
+            // 5.7. Place Intersection Guide Signposts (Downtown, Airport, Station labels)
+            // Placed at main intersection (0, 0)
+            const pole = document.createElement('a-cylinder');
+            pole.setAttribute('radius', '0.08'); pole.setAttribute('height', '4.5');
+            pole.setAttribute('position', '3.5 2.25 3.5');
+            pole.setAttribute('material', 'color: #4b5563');
+            cityContainer.appendChild(pole);
+            
+            // Sign boards facing roads
+            const labels = [
+                { text: "<- Tech Hub", pos: "3.5 4 3.5", rotY: 0 },
+                { text: "Airport ->", pos: "3.5 3.6 3.5", rotY: 90 },
+                { text: "Central Park ^", pos: "3.5 3.2 3.5", rotY: 180 }
+            ];
+            labels.forEach(l => {
+                const sBoard = document.createElement('a-plane');
+                sBoard.setAttribute('width', '1.6'); sBoard.setAttribute('height', '0.35');
+                sBoard.setAttribute('position', l.pos); sBoard.setAttribute('rotation', `0 ${l.rotY} 0`);
+                sBoard.setAttribute('material', 'shader: flat; color: #047857');
+                const sTxt = document.createElement('a-text');
+                sTxt.setAttribute('value', l.text); sTxt.setAttribute('align', 'center');
+                sTxt.setAttribute('width', '1.8'); sTxt.setAttribute('color', 'white');
+                sTxt.setAttribute('position', '0 0 0.01');
+                sBoard.appendChild(sTxt);
+                cityContainer.appendChild(sBoard);
+            });
+
+            // 5.8. Place POI Pins & Gaze info panels
+            for (const key in NODES) {
+                const p = NODES[key];
+                if (!p.isPOI) continue;
+
+                // 3D Pin container
+                const pinEntity = document.createElement('a-entity');
+                pinEntity.setAttribute('id', `pin-${key}`);
+                pinEntity.setAttribute('position', `${p.x} 3 ${p.z}`);
+                
+                // Cone pointing down
+                const cone = document.createElement('a-cone');
+                cone.setAttribute('radius-bottom', '0.04');
+                cone.setAttribute('radius-top', '0.24');
+                cone.setAttribute('height', '0.6');
+                cone.setAttribute('rotation', '180 0 0');
+                cone.setAttribute('class', 'clickable');
+                cone.setAttribute('material', 'color: #ff2d55; shader: flat; emissive: #ff2d55; emissiveIntensity: 0.3');
+                // Glow scale listener component
+                cone.setAttribute('hover-glow', 'color: #00f2fe; originalColor: #ff2d55; scale: 1.2');
+                
+                // Clicking pin starts routing directly! (Google maps style interaction)
+                cone.addEventListener('click', () => {
+                    document.getElementById('destination-selector').value = key;
+                    startNavigation(key);
+                });
+                pinEntity.appendChild(cone);
+
+                // Spinning sphere on top of cone
+                const orb = document.createElement('a-sphere');
+                orb.setAttribute('radius', '0.12');
+                orb.setAttribute('position', '0 0.42 0');
+                orb.setAttribute('material', 'shader: flat; color: #ffffff');
+                orb.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 2500; easing: linear');
+                pinEntity.appendChild(orb);
+
+                // Floating label board above pin
+                const tagBoard = document.createElement('a-plane');
+                tagBoard.setAttribute('width', '2.2');
+                tagBoard.setAttribute('height', '0.45');
+                tagBoard.setAttribute('position', '0 1.2 0');
+                tagBoard.setAttribute('billboard', '');
+                tagBoard.setAttribute('material', 'color: #070913; opacity: 0.85; transparent: true');
+                tagBoard.setAttribute('class', 'clickable');
+                
+                // Glowing border for tag board
+                const tagRing = document.createElement('a-ring');
+                tagRing.setAttribute('radius-inner', '1.1');
+                tagRing.setAttribute('radius-outer', '1.12');
+                tagRing.setAttribute('scale', '1 0.205 1');
+                tagRing.setAttribute('color', '#00f2fe');
+                tagRing.setAttribute('material', 'shader: flat');
+                tagBoard.appendChild(tagRing);
+
+                // Label Text strings
+                const tagText = document.createElement('a-text');
+                tagText.setAttribute('value', p.name.toUpperCase());
+                tagText.setAttribute('align', 'center');
+                tagText.setAttribute('width', '2');
+                tagText.setAttribute('color', '#ffffff');
+                tagText.setAttribute('position', '0 0.08 0.01');
+                tagBoard.appendChild(tagText);
+
+                const tagCat = document.createElement('a-text');
+                tagCat.setAttribute('value', p.category);
+                tagCat.setAttribute('align', 'center');
+                tagCat.setAttribute('width', '1.2');
+                tagCat.setAttribute('color', '#10b981');
+                tagCat.setAttribute('position', '0 -0.12 0.01');
+                tagBoard.appendChild(tagCat);
+
+                pinEntity.appendChild(tagBoard);
+                poiContainer.appendChild(pinEntity);
+
+                // 3D POI Marker inside Holographic Minimap
+                const miniPoi = document.createElement('a-sphere');
+                miniPoi.setAttribute('radius', '0.012');
+                miniPoi.setAttribute('position', `${p.x / 200} 0.005 ${p.z / 200}`);
+                
+                let miniColor = '#00f2fe'; // office cyan
+                if (p.category === "Medical") miniColor = '#ef4444'; // Red Cross Hospital
+                if (p.category === "Nature") miniColor = '#10b981'; // Green Park
+                if (p.category === "Transit") miniColor = '#f59e0b'; // Gold stations/airport
+                if (p.category === "Food & Drink") miniColor = '#ec4899'; // Pink Cafe
+
+                miniPoi.setAttribute('material', `shader: flat; color: ${miniColor}`);
+                miniPois.appendChild(miniPoi);
+            }
+        }
+
+        // =========================================================================
+        // 6. GPS CORE STATE NAVIGATION ENGINE
+        // =========================================================================
+        
+        let activeRoute = null;         // array of Node IDs
+        let currentWaypointIdx = 0;    // current target index in path
+        let activeRouteTargetId = "";   // target Node ID
+        let recalculateCooldown = 0;   // prevent loop calculation
+        
+        window.movementSpeed = 5.0;     // default speeds
+        window.snapTurnAngle = 45;      // snap turning defaults
+        window.isOverview = false;
+        window.inTransition = false;
+
+        const groundSavePos = new THREE.Vector3(-50, 0, -55);
+        let groundSaveRotY = 0;
+
+        // Path transition animation details
+        let transProgress = 0;
+        let transDuration = 1.5;
+        const rigStartPos = new THREE.Vector3();
+        let rigStartRotY = 0;
+        let camStartRotX = 0;
+        const rigEndPos = new THREE.Vector3();
+        let rigEndRotY = 0;
+        let camEndRotX = 0;
+
+        function startNavigation(destinationId) {
+            if (!destinationId || !NODES[destinationId]) return;
+
+            const rig = document.querySelector('#rig');
+            const camera = document.querySelector('#camera');
+            
+            // 6.1. Calculate nearest node to begin path
+            const playerPos = new THREE.Vector3();
+            camera.object3D.getWorldPosition(playerPos);
+
+            const startNode = findNearestNode(playerPos.x, playerPos.z);
+            const path = calculateShortestPath(startNode, destinationId);
+
+            if (path.length === 0) {
+                showAlert("Unable to calculate route!", "danger");
+                return;
+            }
+
+            activeRoute = path;
+            currentWaypointIdx = 0;
+            activeRouteTargetId = destinationId;
+
+            // Trigger startup sound effects & Voice announcement
+            playChime('start');
+            const destName = NODES[destinationId].name;
+            announceDirection(`Navigation initialized. Routing to ${destName}. Follow the glowing path.`);
+            showAlert(`GPS Route Active: to ${destName}`);
+
+            // Toggle HTML overlay fields
+            document.getElementById('route-info-panel').style.display = 'block';
+            document.getElementById('btn-cancel-nav').style.display = 'block';
+            document.getElementById('vr-btn-stop').setAttribute('visible', 'true');
+
+            // Render route graphics
+            draw3DRouteGraphics(path);
+
+            // Fly user down to ground mode automatically if in Overview Mode
+            if (window.isOverview) {
+                toggleOverviewGroundMode();
+            }
+
+            updateGPSTracker(playerPos.x, playerPos.z);
+        }
+
+        function cancelNavigation() {
+            activeRoute = null;
+            currentWaypointIdx = 0;
+            activeRouteTargetId = "";
+
+            announceDirection("Navigation cancelled.");
+            showAlert("Navigation stopped", "warning");
+
+            // Hide/Reset HUD Panels
+            document.getElementById('route-info-panel').style.display = 'none';
+            document.getElementById('btn-cancel-nav').style.display = 'none';
+            document.getElementById('vr-btn-stop').setAttribute('visible', 'false');
+
+            // Clear 3D paths
+            document.querySelector('#route-path-ribbons').innerHTML = "";
+            document.querySelector('#route-waypoints').innerHTML = "";
+            document.querySelector('#route-path-spheres').innerHTML = "";
+            document.querySelector('#route-dest-pin').innerHTML = "";
+            document.querySelector('#mini-route-path').innerHTML = "";
+
+            // Reset VR text dashboards
+            document.querySelector('#vr-nav-icon').setAttribute('value', '^');
+            document.querySelector('#vr-nav-instruction').setAttribute('value', 'Ready to Navigate.\nSelect destination...');
+            document.querySelector('#vr-nav-sub').setAttribute('value', 'Next: --');
+            document.querySelector('#vr-nav-stats').setAttribute('value', 'DIST: --m | ETA: --');
+        }
+
+        // Draw glowing route path on road and miniature paths on holographic minimap
+        function draw3DRouteGraphics(path) {
+            const ribbonContainer = document.querySelector('#route-path-ribbons');
+            const waypointContainer = document.querySelector('#route-waypoints');
+            const sphereContainer = document.querySelector('#route-path-spheres');
+            const destPinContainer = document.querySelector('#route-dest-pin');
+            const miniRoute = document.querySelector('#mini-route-path');
+
+            // Clear existing graphics
+            ribbonContainer.innerHTML = "";
+            waypointContainer.innerHTML = "";
+            sphereContainer.innerHTML = "";
+            destPinContainer.innerHTML = "";
+            miniRoute.innerHTML = "";
+
+            // Loop segments and build cylinders/minimap planes
+            for (let i = 0; i < path.length - 1; i++) {
+                const nodeA = NODES[path[i]];
+                const nodeB = NODES[path[i+1]];
+
+                const dx = nodeB.x - nodeA.x;
+                const dz = nodeB.z - nodeA.z;
+                const length = Math.sqrt(dx*dx + dz*dz);
+                const midX = (nodeA.x + nodeB.x) / 2;
+                const midZ = (nodeA.z + nodeB.z) / 2;
+
+                // A. 3D Emissive route path segment
+                const segment = document.createElement('a-cylinder');
+                segment.setAttribute('radius', '0.35');
+                segment.setAttribute('height', `${length}`);
+                segment.setAttribute('position', `${midX} 0.05 ${midZ}`);
+                
+                const angle = Math.atan2(dx, dz);
+                const rotY = angle * 180 / Math.PI;
+                segment.setAttribute('rotation', `90 ${rotY} 0`);
+                segment.setAttribute('material', 'shader: flat; color: #00f2fe; transparent: true; opacity: 0.65');
+                ribbonContainer.appendChild(segment);
+
+                // B. Mini route path on holographic minimap
+                const miniSeg = document.createElement('a-plane');
+                miniSeg.setAttribute('width', '0.005');
+                miniSeg.setAttribute('height', `${length / 200}`);
+                miniSeg.setAttribute('position', `${midX / 200} 0.003 ${midZ / 200}`);
+                miniSeg.setAttribute('rotation', `-90 ${rotY} 0`);
+                miniSeg.setAttribute('material', 'shader: flat; color: #00f2fe');
+                miniRoute.appendChild(miniSeg);
+
+                // C. Animated sliding guidance spheres component
+                const animEntity = document.createElement('a-entity');
+                animEntity.setAttribute('animated-path-spheres', `pA: ${nodeA.x} 0.05 ${nodeA.z}; pB: ${nodeB.x} 0.05 ${nodeB.z}; speed: 3.5; count: ${Math.max(1, Math.round(length / 15))}`);
+                sphereContainer.appendChild(animEntity);
+            }
+
+            // Draw glowing rings waypoints
+            path.forEach((nodeId, idx) => {
+                const node = NODES[nodeId];
+                if (idx > 0 && idx < path.length - 1) {
+                    const ring = document.createElement('a-ring');
+                    ring.setAttribute('radius-inner', '1.6');
+                    ring.setAttribute('radius-outer', '1.8');
+                    ring.setAttribute('position', `${node.x} 0.08 ${node.z}`);
+                    ring.setAttribute('rotation', '-90 0 0');
+                    ring.setAttribute('material', 'shader: flat; color: #7928ca; transparent: true; opacity: 0.8');
+                    waypointContainer.appendChild(ring);
+                }
+            });
+
+            // Draw destination marker pin (large spinning cone)
+            const dest = NODES[path[path.length - 1]];
+            const pulseCone = document.createElement('a-cone');
+            pulseCone.setAttribute('radius-bottom', '0');
+            pulseCone.setAttribute('radius-top', '0.6');
+            pulseCone.setAttribute('height', '1.5');
+            pulseCone.setAttribute('position', `${dest.x} 4 ${dest.z}`);
+            pulseCone.setAttribute('rotation', '180 0 0');
+            pulseCone.setAttribute('material', 'shader: flat; color: #10b981; transparent: true; opacity: 0.8');
+            pulseCone.setAttribute('animation', 'property: position; dir: alternate; dur: 1000; easing: easeInOutSine; loop: true; to: ' + dest.x + ' 4.3 ' + dest.z);
+            destPinContainer.appendChild(pulseCone);
+        }
+
+        // Translate route node lists to descriptive list of turn steps
+        function buildRouteDirectionsList(path) {
+            const stepsList = [];
+            
+            for (let i = 0; i < path.length - 1; i++) {
+                const curr = path[i];
+                const next = path[i+1];
+                const street = getStreetNameString(curr, next);
+                const distance = Math.round(GRAPH[curr][next]);
+
+                let instruction = `Go straight for ${distance} meters`;
+                let icon = "↑";
+
+                if (i > 0) {
+                    const prev = path[i-1];
+                    const vIn = { x: NODES[curr].x - NODES[prev].x, z: NODES[curr].z - NODES[prev].z };
+                    const vOut = { x: NODES[next].x - NODES[curr].x, z: NODES[next].z - NODES[curr].z };
+
+                    const angIn = Math.atan2(vIn.z, vIn.x);
+                    const angOut = Math.atan2(vOut.z, vOut.x);
+                    let diff = angOut - angIn;
+                    
+                    // Normalize angles
+                    while (diff > Math.PI) diff -= 2 * Math.PI;
+                    while (diff < -Math.PI) diff += 2 * Math.PI;
+
+                    if (Math.abs(diff) > 0.2) {
+                        if (diff > 0.2 && diff < 2.5) {
+                            instruction = `Turn Right onto ${street}`;
+                            icon = "→";
+                        } else if (diff < -0.2 && diff > -2.5) {
+                            instruction = `Turn Left onto ${street}`;
+                            icon = "←";
+                        } else {
+                            instruction = `Make a U-Turn`;
+                            icon = "↺";
+                        }
+                        instruction += ` (${distance}m)`;
+                    } else {
+                        instruction = `Continue onto ${street} for ${distance}m`;
+                    }
+                } else {
+                    instruction = `Head towards ${NODES[next].name} on ${street} (${distance}m)`;
+                }
+
+                stepsList.push({ instruction, icon, targetNodeId: next });
+            }
+
+            // Arrival step
+            const finalNode = NODES[path[path.length - 1]];
+            stepsList.push({
+                instruction: `Arrive at ${finalNode.name}`,
+                icon: "🏁",
+                targetNodeId: path[path.length - 1]
+            });
+
+            return stepsList;
+        }
+
+        // Return edge street name mappings
+        function getStreetNameString(a, b) {
+            const na = NODES[a];
+            const nb = NODES[b];
+            if (!na || !nb) return "City Street";
+
+            if (na.x === -50 && nb.x === -50) return "Tech Boulevard";
+            if (na.x === 0 && nb.x === 0) return "Main Street";
+            if (na.x === 50 && nb.x === 50) return "East Road";
+            if (na.z === -50 && nb.z === -50) return "North Avenue";
+            if (na.z === 0 && nb.z === 0) return "Broadway";
+            if (na.z === 50 && nb.z === 50) return "South Avenue";
+
+            // POI links
+            if (a === "tech_hub" || b === "tech_hub") return "Tech Hub Drive";
+            if (a === "hospital" || b === "hospital") return "Hospital Lane";
+            if (a === "airport" || b === "airport") return "Airport Access Boulevard";
+            if (a === "station" || b === "station") return "Station Access Rd";
+            if (a === "observatory" || b === "observatory") return "Observatory Climb";
+            if (a === "cafe_neon" || b === "cafe_neon") return "Cafe Alley";
+            if (a === "academy" || b === "academy") return "Academy Way";
+            if (a === "park" || b === "park") return "Park Lane";
+            if (a === "retail" || b === "retail") return "Retail Plaza Walk";
+
+            return "City Street";
+        }
+
+        // Main tracking loops: Monitors distance and coordinates
+        function updateGPSTracker(px, pz) {
+            if (!activeRoute) return;
+
+            // 1. Distance to current active segment node target
+            const targetId = activeRoute[currentWaypointIdx];
+            const targetNode = NODES[targetId];
+            const distToNextNode = Math.sqrt((px - targetNode.x)**2 + (pz - targetNode.z)**2);
+
+            // A-Frame Waypoint Trigger Distance (<5 meters)
+            if (distToNextNode < 5.0) {
+                // If it is final destination, player arrived!
+                if (currentWaypointIdx === activeRoute.length - 1) {
+                    playChime('arrive');
+                    const name = NODES[activeRouteTargetId].name;
+                    announceDirection(`Arrived. You have reached your destination: ${name}. Navigation complete.`);
+                    showAlert(`Arrived at ${name}!`, "success");
+                    cancelNavigation();
+                    return;
+                } else {
+                    // Progress to next path node waypoint
+                    currentWaypointIdx++;
+                    playChime('waypoint');
+                    
+                    const nextTargetId = activeRoute[currentWaypointIdx];
+                    const nextTarget = NODES[nextTargetId];
+                    const nextStreet = getStreetNameString(targetId, nextTargetId);
+                    
+                    announceDirection(`Waypoint reached. Go straight towards ${nextTarget.name} on ${nextStreet}`);
+                }
+            }
+
+            // 2. Off-Route calculation: checks perpendicular distance to road segment
+            if (currentWaypointIdx > 0 && currentWaypointIdx < activeRoute.length) {
+                const prevNode = NODES[activeRoute[currentWaypointIdx - 1]];
+                const currNode = NODES[activeRoute[currentWaypointIdx]];
+                
+                const offRouteDist = distanceToLineSegment(px, pz, prevNode.x, prevNode.z, currNode.x, currNode.z);
+                
+                // If user wanders > 15m away, recalculate route automatically
+                const now = Date.now();
+                if (offRouteDist > 15.0 && now - recalculateCooldown > 8000) {
+                    recalculateCooldown = now;
+                    playChime('recalculate');
+                    announceDirection("Recalculating route.");
+                    showAlert("Off Route! Recalculating...", "warning");
+                    
+                    // Re-route from nearest node to destination
+                    const newStartNode = findNearestNode(px, pz);
+                    const newPath = calculateShortestPath(newStartNode, activeRouteTargetId);
+                    if (newPath.length > 0) {
+                        activeRoute = newPath;
+                        currentWaypointIdx = 0;
+                        draw3DRouteGraphics(newPath);
+                    }
+                    return;
+                }
+            }
+
+            // 3. Compute remaining total route distance
+            let remainingDistance = distToNextNode;
+            for (let i = currentWaypointIdx; i < activeRoute.length - 1; i++) {
+                const nodeA = activeRoute[i];
+                const nodeB = activeRoute[i+1];
+                remainingDistance += GRAPH[nodeA][nodeB];
+            }
+
+            // Compute Estimated Time (Walking speed averages 1.4m/s, simulation scale speed ~3.0m/s)
+            const etaSeconds = Math.round(remainingDistance / 3.0);
+            const etaString = etaSeconds >= 60 ? `${Math.floor(etaSeconds/60)}m ${etaSeconds%60}s` : `${etaSeconds}s`;
+
+            // 4. Update UI Panels (HTML and VR Texts)
+            const directionsList = buildRouteDirectionsList(activeRoute);
+            
+            // A. HTML panel sync
+            const nextStep = directionsList[currentWaypointIdx] || { instruction: "Arrive at destination", icon: "🏁" };
+            document.getElementById('hud-nav-icon').innerText = nextStep.icon;
+            document.getElementById('hud-nav-instruction').innerText = nextStep.instruction;
+            document.getElementById('hud-nav-sub').innerText = `Next action in ${Math.round(distToNextNode)}m`;
+            document.getElementById('hud-stat-dist').innerText = `${Math.round(remainingDistance)}m`;
+            document.getElementById('hud-stat-time').innerText = etaString;
+
+            // Render list steps
+            const listEl = document.getElementById('hud-steps-list');
+            listEl.innerHTML = "";
+            directionsList.forEach((step, idx) => {
+                const item = document.createElement('div');
+                item.className = `step-item ${idx === currentWaypointIdx ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div class="step-index">${step.icon === "🏁" ? "🏁" : idx + 1}</div>
+                    <div>${step.instruction}</div>
+                `;
+                listEl.appendChild(item);
+                // Auto scroll list
+                if (idx === currentWaypointIdx) {
+                    listEl.scrollTop = item.offsetTop - 40;
+                }
+            });
+
+            // B. VR Console HUD sync
+            document.querySelector('#vr-nav-icon').setAttribute('value', nextStep.icon);
+            // Replace long strings for VR readability
+            const vrCleanInst = nextStep.instruction.replace("meters", "m").replace("Continue onto", "Go on");
+            document.querySelector('#vr-nav-instruction').setAttribute('value', vrCleanInst);
+            document.querySelector('#vr-nav-sub').setAttribute('value', `Next in ${Math.round(distToNextNode)}m`);
+            document.querySelector('#vr-nav-stats').setAttribute('value', `DIST: ${Math.round(remainingDistance)}m | ETA: ${etaString}`);
+        }
+
+        // Distance to line segment helper (exact math)
+        function distanceToLineSegment(px, pz, ax, az, bx, bz) {
+            const l2 = (ax - bx)**2 + (az - bz)**2;
+            if (l2 === 0) return Math.sqrt((px - ax)**2 + (pz - az)**2);
+            let t = ((px - ax) * (bx - ax) + (pz - az) * (bz - az)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.sqrt((px - (ax + t * (bx - ax)))**2 + (pz - (az + t * (bz - az)))**2);
+        }
+
+        // =========================================================================
+        // 7. VIEW MODE TRANSITIONS (GROUND LOC-STEPS VS OVERVIEW MAP FLIGHT)
+        // =========================================================================
+        
+        function toggleOverviewGroundMode() {
+            const rig = document.querySelector('#rig');
+            const camera = document.querySelector('#camera');
+
+            if (window.inTransition) return;
+
+            // Prepare transition values
+            window.inTransition = true;
+            transProgress = 0;
+
+            rigStartPos.copy(rig.object3D.position);
+            rigStartRotY = rig.object3D.rotation.y;
+            camStartRotX = camera.object3D.rotation.x;
+
+            if (!window.isOverview) {
+                // Save current ground coordinate positions
+                groundSavePos.copy(rig.object3D.position);
+                groundSaveRotY = rig.object3D.rotation.y;
+
+                // Configure target Overview orthographic style coordinates
+                rigEndPos.set(0, 75, 75); // Elevated view looking at center (0,0)
+                rigEndRotY = 0;          // Face north
+                camEndRotX = -Math.PI / 3.4; // Angle down -53 degrees
+
+                window.isOverview = true;
+                announceDirection("Switching to Overview map mode.");
+                showAlert("Overview Map Enabled");
+                document.getElementById('btn-toggle-view-2d').innerText = "Return to First-Person";
+                document.querySelector('#vr-txt-toggle-view').setAttribute('value', "GROUND MODE");
+                
+                // Hide WASD helper
+                document.getElementById('desktop-instructions').style.display = 'none';
+            } else {
+                // Restore ground coordinates
+                rigEndPos.copy(groundSavePos);
+                rigEndRotY = groundSaveRotY;
+                camEndRotX = 0; // face level
+
+                window.isOverview = false;
+                announceDirection("Returning to ground view.");
+                showAlert("First-Person VR Enabled");
+                document.getElementById('btn-toggle-view-2d').innerText = "Switch to Overview Mode";
+                document.querySelector('#vr-txt-toggle-view').setAttribute('value', "OVERVIEW MAP");
+
+                // Restore WASD helper
+                document.getElementById('desktop-instructions').style.display = 'block';
+            }
+        }
+
+        // Recenter player to start location Tech Hub
+        function recenterPlayer() {
+            const rig = document.querySelector('#rig');
+            const camera = document.querySelector('#camera');
+
+            if (window.inTransition) return;
+
+            cancelNavigation();
+            
+            groundSavePos.set(-50, 0, -55);
+            groundSaveRotY = 0;
+
+            if (window.isOverview) {
+                // If in overview, just reset ground coordinates so return flies there
+                showAlert("Position reset");
+                announceDirection("Coordinates reset.");
+                toggleOverviewGroundMode(); // fly down
+            } else {
+                // Trigger smooth snap back to ground
+                window.inTransition = true;
+                transProgress = 0;
+                rigStartPos.copy(rig.object3D.position);
+                rigStartRotY = rig.object3D.rotation.y;
+                camStartRotX = camera.object3D.rotation.x;
+
+                rigEndPos.copy(groundSavePos);
+                rigEndRotY = groundSaveRotY;
+                camEndRotX = 0;
+
+                showAlert("Recentered position");
+                announceDirection("Position recentered.");
+            }
+        }
+
+        // =========================================================================
+        // 8. SETUP EVENT HANDLERS AND EVENT LISTENERS
+        // =========================================================================
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            // 8.1. Generate City environment
+            generateProceduralCity();
+
+            // 8.2. Set default values from sliders
+            window.movementSpeed = parseFloat(document.getElementById('input-speed').value);
+            window.snapTurnAngle = parseInt(document.getElementById('input-snap').value);
+            window.speechSpeed = parseFloat(document.getElementById('input-speech').value);
+
+            // 8.3. Add HTML Event listeners
+            document.getElementById('btn-start-nav').addEventListener('click', () => {
+                const dest = document.getElementById('destination-selector').value;
+                if (dest) {
+                    startNavigation(dest);
+                } else {
+                    showAlert("Choose destination first!", "warning");
+                }
+            });
+
+            document.getElementById('btn-cancel-nav').addEventListener('click', cancelNavigation);
+            document.getElementById('btn-toggle-view-2d').addEventListener('click', toggleOverviewGroundMode);
+            document.getElementById('btn-recenter-2d').addEventListener('click', recenterPlayer);
+
+            // Settings sliders
+            document.getElementById('input-speed').addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                window.movementSpeed = val;
+                document.getElementById('label-speed').innerText = `${val.toFixed(1)} m/s`;
+            });
+
+            document.getElementById('input-snap').addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                window.snapTurnAngle = val;
+                document.getElementById('label-snap').innerText = `${val}°`;
+            });
+
+            document.getElementById('input-speech').addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                window.speechSpeed = val;
+                document.getElementById('label-speech').innerText = `${val.toFixed(1)}x`;
+            });
+
+            // 2D Audio Mute Toggle
+            const muteBtn2d = document.getElementById('mute-toggle-2d');
+            const audioSvgIcon = document.getElementById('audio-svg-icon');
+            muteBtn2d.addEventListener('click', toggleMuteState);
+
+            // 8.4. Add VR Console HUD Event listeners
+            // Destination buttons grid click bindings
+            const vrBtnMap = {
+                'vr-btn-hub': 'tech_hub',
+                'vr-btn-cafe': 'cafe_neon',
+                'vr-btn-park': 'park',
+                'vr-btn-hosp': 'hospital',
+                'vr-btn-station': 'station',
+                'vr-btn-airport': 'airport'
+            };
+
+            for (const btnId in vrBtnMap) {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        const targetPoi = vrBtnMap[btnId];
+                        document.getElementById('destination-selector').value = targetPoi;
+                        startNavigation(targetPoi);
+                    });
+                }
+            }
+
+            // Mode view / Mute / Cancel buttons inside VR dashboard
+            document.getElementById('vr-btn-toggle-view').addEventListener('click', toggleOverviewGroundMode);
+            document.getElementById('vr-btn-mute').addEventListener('click', toggleMuteState);
+            document.getElementById('vr-btn-stop').addEventListener('click', cancelNavigation);
+
+            // 8.5. Register WebXR Enter / Exit listeners (optimizes layouts)
+            const sceneEl = document.querySelector('#vr-scene');
+            const desktopCursor = document.querySelector('#desktop-cursor');
+
+            sceneEl.addEventListener('enter-vr', () => {
+                // Hide mouse reticle in headset to avoid double cursors
+                if (desktopCursor) desktopCursor.setAttribute('visible', 'false');
+                // Hide desktop HTML overlays to improve browser rendering frames
+                document.getElementById('desktop-hud').style.display = 'none';
+                document.getElementById('desktop-instructions').style.display = 'none';
+                document.getElementById('mute-toggle-2d').style.display = 'none';
+                initAudioContext();
+            });
+
+            sceneEl.addEventListener('exit-vr', () => {
+                // Show mouse cursor
+                if (desktopCursor) desktopCursor.setAttribute('visible', 'true');
+                // Restore HTML overlays
+                document.getElementById('desktop-hud').style.display = 'flex';
+                document.getElementById('desktop-instructions').style.display = 'block';
+                document.getElementById('mute-toggle-2d').style.display = 'flex';
+            });
+        });
+
+        // Toggle Audio and GPS Muted state
+        function toggleMuteState() {
+            window.audioMuted = !window.audioMuted;
+            
+            const muteBtn2d = document.getElementById('mute-toggle-2d');
+            const vrMuteTxt = document.querySelector('#vr-txt-mute');
+            const vrMuteBtn = document.querySelector('#vr-btn-mute');
+
+            if (window.audioMuted) {
+                // Change UI to Muted state
+                muteBtn2d.classList.add('muted');
+                muteBtn2d.setAttribute('title', 'Unmute audio');
+                document.getElementById('audio-svg-icon').innerHTML = `
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                `;
+                
+                if (vrMuteTxt) vrMuteTxt.setAttribute('value', 'UNMUTE VOICE');
+                if (vrMuteBtn) vrMuteBtn.setAttribute('material', 'color', '#ef4444');
+                
+                // Mute window speech synthesizer
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+                showAlert("Audio Muted", "warning");
+            } else {
+                // Change UI to Unmuted state
+                muteBtn2d.classList.remove('muted');
+                muteBtn2d.setAttribute('title', 'Mute audio');
+                document.getElementById('audio-svg-icon').innerHTML = `
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                `;
+                
+                if (vrMuteTxt) vrMuteTxt.setAttribute('value', 'MUTE VOICE');
+                if (vrMuteBtn) vrMuteBtn.setAttribute('material', 'color', '#10b981');
+                
+                showAlert("Audio Unmuted");
+                playChime('click');
+            }
+        }
+
+        // Show floating HUD feedback alert box
+        function showAlert(text, type = "success") {
+            const box = document.getElementById('alert-box');
+            box.innerText = text;
+            box.className = "";
+            if (type !== "success") box.classList.add(type);
+            box.classList.add('show');
+
+            // Hide alert after 3 seconds
+            setTimeout(() => {
+                box.classList.remove('show');
+            }, 3000);
+        }
+
+        // =========================================================================
+        // 9. ANIMATION TICK LOOPS (TICK REGISTRATION)
+        // =========================================================================
+        
+        AFRAME.registerComponent('scene-tick-controller', {
+            init: function () {
+                this.camera = document.querySelector('#camera');
+                this.miniPlayer = document.querySelector('#mini-player');
+                this.rig = document.querySelector('#rig');
+            },
+            tick: function (time, timeDelta) {
+                if (!timeDelta) return;
+
+                const px = this.camera.object3D.parent.position.x + this.camera.object3D.position.x;
+                const pz = this.camera.object3D.parent.position.z + this.camera.object3D.position.z;
+
+                // A. Sync Player Marker on Holographic Minimap
+                // Scale factor: 1/200
+                if (this.miniPlayer) {
+                    this.miniPlayer.object3D.position.set(px / 200, 0.005, pz / 200);
+                }
+
+                // B. Real-time GPS distance and waypoint updates
+                if (activeRoute) {
+                    updateGPSTracker(px, pz);
+                }
+
+                // C. Smooth Flight Transition between Overview & Ground views
+                if (window.inTransition) {
+                    transProgress += (timeDelta / 1000) / transDuration;
+                    if (transProgress >= 1.0) {
+                        transProgress = 1.0;
+                        window.inTransition = false;
+                    }
+
+                    // Sine ease-out interpolation
+                    const t = Math.sin(transProgress * Math.PI / 2);
+                    
+                    // Interpolate rig coordinates
+                    this.rig.object3D.position.lerpVectors(rigStartPos, rigEndPos, t);
+                    this.rig.object3D.rotation.y = rigStartRotY + (rigEndRotY - rigStartRotY) * t;
+
+                    // Interpolate camera angle tilt
+                    this.camera.object3D.rotation.x = camStartRotX + (camEndRotX - camStartRotX) * t;
+                }
+            }
+        });
+
+        // Mount main scene ticking loop controller
+        document.querySelector('#vr-scene').setAttribute('scene-tick-controller', '');
+
+        // Polyfill fallback for WebXR VR detection
+        if (navigator.xr) {
+            navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+                if (supported) {
+                    document.getElementById('xr-banner').style.display = 'none';
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>
