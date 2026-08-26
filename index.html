@@ -5,13 +5,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>VR Navigator - Spatial Wayfinding System</title>
-    <meta name="description" content="Next-generation immersive VR navigation system for Meta Quest 3S and desktop browsers." />
+    <meta name="description"
+        content="Next-generation immersive VR navigation system for Meta Quest 3S and desktop browsers." />
 
     <!-- A-Frame Library CDN -->
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
 
     <!-- Inline CSS for Desktop HUD and fallbacks -->
     <style>
@@ -108,10 +110,12 @@
                 transform: scale(0.95);
                 box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7);
             }
+
             70% {
                 transform: scale(1);
                 box-shadow: 0 0 0 10px rgba(0, 242, 254, 0);
             }
+
             100% {
                 transform: scale(0.95);
                 box-shadow: 0 0 0 0 rgba(0, 242, 254, 0);
@@ -594,7 +598,7 @@
             <!-- Map View Mode and Comfort Settings -->
             <div class="glass-panel controls-group">
                 <div class="section-label">Navigation System Options</div>
-                
+
                 <!-- View Mode Button -->
                 <button class="btn-secondary" id="btn-toggle-view-2d">Switch to Overview Mode</button>
                 <button class="btn-secondary" id="btn-recenter-2d">Recenter Position</button>
@@ -633,7 +637,8 @@
     <div id="mute-toggle-2d" title="Toggle voice/audio chime guidance">
         <svg class="icon-svg" viewBox="0 0 24 24" id="audio-svg-icon">
             <!-- Unmuted Speaker Icon (Default) -->
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            <path
+                d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
         </svg>
     </div>
 
@@ -641,7 +646,8 @@
     <div id="desktop-instructions">
         <div class="section-label" style="margin-bottom: 8px;">Desktop Simulator Controls</div>
         <div class="instruction-item">
-            <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span>
+            <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span
+                class="key-cap">D</span>
             <span>Move around city</span>
         </div>
         <div class="instruction-item">
@@ -670,7 +676,7 @@
         <!-- antialias: true, colorManagement: true for rich aesthetics and premium lighting -->
         <a-scene id="vr-scene" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: false"
             cursor="rayOrigin: mouse" raycaster="objects: .clickable" shadow="type: pcfsoft" vr-mode-ui="enabled: true">
-            
+
             <a-assets>
                 <!-- We do not declare remote assets here to prevent CORS & offline errors. -->
                 <!-- Instead, procedural canvas materials will be injected via JS on scene load. -->
@@ -683,15 +689,17 @@
             <a-entity id="stars-field"></a-entity>
 
             <!-- Ground plane with procedural glowing cyber-grid material -->
-            <a-plane id="ground-plane" position="0 0 0" rotation="-90 0 0" width="400" height="400"
-                color="#060713" material="roughness: 0.8; metalness: 0.1"></a-plane>
+            <a-plane id="ground-plane" position="0 0 0" rotation="-90 0 0" width="400" height="400" color="#060713"
+                material="roughness: 0.8; metalness: 0.1"></a-plane>
 
             <!-- Ambient global lighting (cyan-indigo tint for cyberpunk feel) -->
             <a-light type="ambient" color="#181832" intensity="1.5"></a-light>
 
             <!-- Subtle directional moonlight casting soft shadows -->
-            <a-light type="directional" color="#00f2fe" intensity="0.8" position="30 80 -20" castShadow="false"></a-light>
-            <a-light type="directional" color="#7928ca" intensity="0.6" position="-30 80 20" castShadow="false"></a-light>
+            <a-light type="directional" color="#00f2fe" intensity="0.8" position="30 80 -20"
+                castShadow="false"></a-light>
+            <a-light type="directional" color="#7928ca" intensity="0.6" position="-30 80 20"
+                castShadow="false"></a-light>
 
             <!-- Procedural City Entity Group -->
             <a-entity id="city-blocks"></a-entity>
@@ -714,14 +722,14 @@
             <!-- CAMERA RIG (Player Entity) -->
             <!-- Spawn position corresponds to Node 1 (Tech Hub) at ground level height -->
             <a-entity id="rig" position="-50 0 -55" rotation="0 0 0">
-                
+
                 <!-- Head Camera -->
-                <a-entity id="camera" camera look-controls="pointerLockEnabled: false" wasd-controls="enabled: false" position="0 1.6 0">
-                    
+                <a-entity id="camera" camera look-controls="pointerLockEnabled: false" wasd-controls="enabled: false"
+                    position="0 1.6 0">
+
                     <!-- Desktop Reticle/Cursor: Hidden when entering VR WebXR -->
-                    <a-cursor id="desktop-cursor" raycaster="objects: .clickable" 
-                        material="color: #00f2fe; shader: flat; opacity: 0.8" 
-                        position="0 0 -1" 
+                    <a-cursor id="desktop-cursor" raycaster="objects: .clickable"
+                        material="color: #00f2fe; shader: flat; opacity: 0.8" position="0 0 -1"
                         geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015">
                     </a-cursor>
 
@@ -734,20 +742,16 @@
 
                 <!-- VR Controllers Integration (Meta Quest 3S Controllers) -->
                 <!-- Left Hand Controller: Handles movement translation -->
-                <a-entity id="left-controller"
-                    laser-controls="hand: left"
+                <a-entity id="left-controller" laser-controls="hand: left"
                     raycaster="objects: .clickable; far: 15; showLine: true"
-                    line="color: #00f2fe; opacity: 0.7; width: 0.005"
-                    oculus-touch-controls="hand: left"
+                    line="color: #00f2fe; opacity: 0.7; width: 0.005" oculus-touch-controls="hand: left"
                     thumbstick-movement="rig: #rig; camera: #camera">
                 </a-entity>
 
                 <!-- Right Hand Controller: Handles Snap Turning and Clicking selection -->
-                <a-entity id="right-controller"
-                    laser-controls="hand: right"
+                <a-entity id="right-controller" laser-controls="hand: right"
                     raycaster="objects: .clickable; far: 15; showLine: true"
-                    line="color: #7928ca; opacity: 0.7; width: 0.005"
-                    oculus-touch-controls="hand: right"
+                    line="color: #7928ca; opacity: 0.7; width: 0.005" oculus-touch-controls="hand: right"
                     thumbstick-rotation="rig: #rig">
                 </a-entity>
 
@@ -755,14 +759,16 @@
 
             <!-- FLOATING VR HUD CONSOLE (Lazy follows the Camera position) -->
             <a-entity id="vr-hud" lazy-follow="target: #camera">
-                
+
                 <!-- Visual 3D Holographic Minimap Panel (Floats right above the main console panel) -->
                 <a-entity id="mini-map" position="0 0.35 -0.1" rotation="-65 0 0">
                     <!-- Base map plane -->
-                    <a-plane width="0.5" height="0.5" color="#050611" opacity="0.9" material="transparent: true; roughness: 0.9">
+                    <a-plane width="0.5" height="0.5" color="#050611" opacity="0.9"
+                        material="transparent: true; roughness: 0.9">
                         <!-- Minimap glowing border line -->
-                        <a-ring radius-inner="0.245" radius-outer="0.25" color="#00f2fe" material="shader: flat"></a-ring>
-                        
+                        <a-ring radius-inner="0.245" radius-outer="0.25" color="#00f2fe"
+                            material="shader: flat"></a-ring>
+
                         <!-- Mini road markings container -->
                         <a-entity id="mini-roads"></a-entity>
                         <!-- Mini POI marker dots container -->
@@ -770,77 +776,111 @@
                         <!-- Mini active route line path -->
                         <a-entity id="mini-route-path"></a-entity>
                         <!-- Mini player locator dot -->
-                        <a-sphere id="mini-player" radius="0.012" color="#10b981" material="shader: flat; emissive: #10b981; emissiveIntensity: 1.5"></a-sphere>
+                        <a-sphere id="mini-player" radius="0.012" color="#10b981"
+                            material="shader: flat; emissive: #10b981; emissiveIntensity: 1.5"></a-sphere>
                     </a-plane>
                     <!-- Text Label above Minimap -->
-                    <a-text value="HOLOGRAPHIC CITY MAP" align="center" width="1.2" color="#00f2fe" position="0 0.27 0.01" font="mozillavr"></a-text>
+                    <a-text value="HOLOGRAPHIC CITY MAP" align="center" width="1.2" color="#00f2fe"
+                        position="0 0.27 0.01" font="mozillavr"></a-text>
                 </a-entity>
 
                 <!-- MAIN DASHBOARD PANEL -->
                 <!-- Base console panel background -->
-                <a-plane id="vr-dashboard-base" width="1.3" height="0.75" color="#080a15" opacity="0.95" rotation="-22 0 0" position="0 -0.05 0"
+                <a-plane id="vr-dashboard-base" width="1.3" height="0.75" color="#080a15" opacity="0.95"
+                    rotation="-22 0 0" position="0 -0.05 0"
                     material="transparent: true; roughness: 0.8; metalness: 0.2">
-                    <a-ring radius-inner="0.67" radius-outer="0.675" scale="1 0.58 1" color="#7928ca" material="shader: flat"></a-ring>
+                    <a-ring radius-inner="0.67" radius-outer="0.675" scale="1 0.58 1" color="#7928ca"
+                        material="shader: flat"></a-ring>
 
                     <!-- Title Header -->
-                    <a-text value="VR NAVIGATION CONSOLE" align="center" width="2.2" color="#00f2fe" position="0 0.32 0.01" font="mozillavr"></a-text>
+                    <a-text value="VR NAVIGATION CONSOLE" align="center" width="2.2" color="#00f2fe"
+                        position="0 0.32 0.01" font="mozillavr"></a-text>
 
                     <!-- LEFT HALF: TURN-BY-TURN GUIDANCE PANEL -->
                     <!-- Background panel -->
-                    <a-plane width="0.56" height="0.48" color="#111424" opacity="0.9" position="-0.31 -0.02 0.005" material="transparent: true">
+                    <a-plane width="0.56" height="0.48" color="#111424" opacity="0.9" position="-0.31 -0.02 0.005"
+                        material="transparent: true">
                         <!-- Navigation Icon text -->
-                        <a-text id="vr-nav-icon" value="^" align="center" width="5" color="#00f2fe" position="0 0.16 0.01" font="mozillavr"></a-text>
+                        <a-text id="vr-nav-icon" value="^" align="center" width="5" color="#00f2fe"
+                            position="0 0.16 0.01" font="mozillavr"></a-text>
                         <!-- Instruction Text string -->
-                        <a-text id="vr-nav-instruction" value="Ready to Navigate.\nSelect destination..." align="center" width="1.6" color="#ffffff" position="0 0.02 0.01"></a-text>
+                        <a-text id="vr-nav-instruction" value="Ready to Navigate.\nSelect destination..." align="center"
+                            width="1.6" color="#ffffff" position="0 0.02 0.01"></a-text>
                         <!-- Next action details -->
-                        <a-text id="vr-nav-sub" value="Next: --" align="center" width="1.3" color="#9ca3af" position="0 -0.09 0.01"></a-text>
-                        
+                        <a-text id="vr-nav-sub" value="Next: --" align="center" width="1.3" color="#9ca3af"
+                            position="0 -0.09 0.01"></a-text>
+
                         <!-- Travel Stats: Remaining Dist / Remaining Time -->
                         <a-plane width="0.48" height="0.08" color="#080a14" position="0 -0.18 0.01">
-                            <a-text id="vr-nav-stats" value="DIST: --m | ETA: --" align="center" width="1.4" color="#10b981" position="0 0 0.005" font="mozillavr"></a-text>
+                            <a-text id="vr-nav-stats" value="DIST: --m | ETA: --" align="center" width="1.4"
+                                color="#10b981" position="0 0 0.005" font="mozillavr"></a-text>
                         </a-plane>
                     </a-plane>
 
                     <!-- RIGHT HALF: DESTINATION / CONTROL GRID BUTTONS -->
-                    <a-plane width="0.56" height="0.48" color="#111424" opacity="0.9" position="0.31 -0.02 0.005" material="transparent: true">
+                    <a-plane width="0.56" height="0.48" color="#111424" opacity="0.9" position="0.31 -0.02 0.005"
+                        material="transparent: true">
                         <!-- Selection Title -->
-                        <a-text value="QUICK DESTINATIONS" align="center" width="1.5" color="#9ca3af" position="0 0.2 0.01"></a-text>
+                        <a-text value="QUICK DESTINATIONS" align="center" width="1.5" color="#9ca3af"
+                            position="0 0.2 0.01"></a-text>
 
                         <!-- Button grid: 6 locations -->
                         <!-- Row 1 -->
-                        <a-plane id="vr-btn-hub" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="-0.17 0.1 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
-                            <a-text value="Tech Hub" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        <a-plane id="vr-btn-hub" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b"
+                            position="-0.17 0.1 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Tech Hub" align="center" width="1.1" color="white"
+                                position="0 0 0.005"></a-text>
                         </a-plane>
-                        <a-plane id="vr-btn-cafe" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="0 0.1 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
-                            <a-text value="Cafe Neon" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        <a-plane id="vr-btn-cafe" class="clickable hover-glow" width="0.16" height="0.08"
+                            color="#1e294b" position="0 0.1 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Cafe Neon" align="center" width="1.1" color="white"
+                                position="0 0 0.005"></a-text>
                         </a-plane>
-                        <a-plane id="vr-btn-park" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="0.17 0.1 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                        <a-plane id="vr-btn-park" class="clickable hover-glow" width="0.16" height="0.08"
+                            color="#1e294b" position="0.17 0.1 0.01"
+                            hover-glow="color: #00f2fe; originalColor: #1e294b">
                             <a-text value="Park" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
                         </a-plane>
 
                         <!-- Row 2 -->
-                        <a-plane id="vr-btn-hosp" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="-0.17 -0.02 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
-                            <a-text value="Hospital" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        <a-plane id="vr-btn-hosp" class="clickable hover-glow" width="0.16" height="0.08"
+                            color="#1e294b" position="-0.17 -0.02 0.01"
+                            hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Hospital" align="center" width="1.1" color="white"
+                                position="0 0 0.005"></a-text>
                         </a-plane>
-                        <a-plane id="vr-btn-station" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="0 -0.02 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
-                            <a-text value="Station" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        <a-plane id="vr-btn-station" class="clickable hover-glow" width="0.16" height="0.08"
+                            color="#1e294b" position="0 -0.02 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Station" align="center" width="1.1" color="white"
+                                position="0 0 0.005"></a-text>
                         </a-plane>
-                        <a-plane id="vr-btn-airport" class="clickable hover-glow" width="0.16" height="0.08" color="#1e294b" position="0.17 -0.02 0.01" hover-glow="color: #00f2fe; originalColor: #1e294b">
-                            <a-text value="Airport" align="center" width="1.1" color="white" position="0 0 0.005"></a-text>
+                        <a-plane id="vr-btn-airport" class="clickable hover-glow" width="0.16" height="0.08"
+                            color="#1e294b" position="0.17 -0.02 0.01"
+                            hover-glow="color: #00f2fe; originalColor: #1e294b">
+                            <a-text value="Airport" align="center" width="1.1" color="white"
+                                position="0 0 0.005"></a-text>
                         </a-plane>
 
                         <!-- Controls below selection grid -->
-                        <a-plane id="vr-btn-toggle-view" class="clickable hover-glow" width="0.25" height="0.08" color="#2563eb" position="-0.13 -0.15 0.01" hover-glow="color: #60a5fa; originalColor: #2563eb">
-                            <a-text id="vr-txt-toggle-view" value="OVERVIEW MAP" align="center" width="1.2" color="white" position="0 0 0.005"></a-text>
+                        <a-plane id="vr-btn-toggle-view" class="clickable hover-glow" width="0.25" height="0.08"
+                            color="#2563eb" position="-0.13 -0.15 0.01"
+                            hover-glow="color: #60a5fa; originalColor: #2563eb">
+                            <a-text id="vr-txt-toggle-view" value="OVERVIEW MAP" align="center" width="1.2"
+                                color="white" position="0 0 0.005"></a-text>
                         </a-plane>
-                        <a-plane id="vr-btn-mute" class="clickable hover-glow" width="0.25" height="0.08" color="#10b981" position="0.13 -0.15 0.01" hover-glow="color: #34d399; originalColor: #10b981">
-                            <a-text id="vr-txt-mute" value="MUTE VOICE" align="center" width="1.2" color="white" position="0 0 0.005"></a-text>
+                        <a-plane id="vr-btn-mute" class="clickable hover-glow" width="0.25" height="0.08"
+                            color="#10b981" position="0.13 -0.15 0.01"
+                            hover-glow="color: #34d399; originalColor: #10b981">
+                            <a-text id="vr-txt-mute" value="MUTE VOICE" align="center" width="1.2" color="white"
+                                position="0 0 0.005"></a-text>
                         </a-plane>
                     </a-plane>
 
                     <!-- CANCEL NAVIGATION BUTTON (Bottom bar) -->
-                    <a-plane id="vr-btn-stop" class="clickable hover-glow" width="0.35" height="0.07" color="#ef4444" position="0 -0.32 0.01" visible="false" hover-glow="color: #f87171; originalColor: #ef4444">
-                        <a-text value="CANCEL NAVIGATION" align="center" width="1.3" color="white" position="0 0 0.005"></a-text>
+                    <a-plane id="vr-btn-stop" class="clickable hover-glow" width="0.35" height="0.07" color="#ef4444"
+                        position="0 -0.32 0.01" visible="false" hover-glow="color: #f87171; originalColor: #ef4444">
+                        <a-text value="CANCEL NAVIGATION" align="center" width="1.3" color="white"
+                            position="0 0 0.005"></a-text>
                     </a-plane>
                 </a-plane>
             </a-entity> <!-- END VR HUD -->
@@ -853,7 +893,7 @@
         // =========================================================================
         // 1. DATA DEFINITIONS (CITY GRID, PATHFINDING GRAPH, POIS)
         // =========================================================================
-        
+
         // City Road Network Nodes
         // Coordinates maps directly to streets
         const NODES = {
@@ -906,7 +946,7 @@
         // =========================================================================
         // 2. DIJKSTRA PATHFINDING LOGIC
         // =========================================================================
-        
+
         class PriorityQueue {
             constructor() {
                 this.values = [];
@@ -991,7 +1031,7 @@
         // =========================================================================
         // 3. CUSTOM A-FRAME COMPONENTS DEFINITIONS
         // =========================================================================
-        
+
         // Meta Quest 3S Controller: Locomotion movement (Left Thumbstick)
         AFRAME.registerComponent('thumbstick-movement', {
             schema: {
@@ -1008,7 +1048,7 @@
             },
             tick: function (time, timeDelta) {
                 if (!timeDelta || window.isOverview || window.inTransition) return;
-                
+
                 const x = this.axis[0];
                 const y = this.axis[1];
                 if (Math.abs(x) < 0.05 && Math.abs(y) < 0.05) return;
@@ -1056,17 +1096,17 @@
             },
             tick: function (time, timeDelta) {
                 if (window.isOverview || window.inTransition) return;
-                
+
                 const now = Date.now();
                 const cooldown = 350; // ms between snap turns
-                
+
                 if (now - this.lastSnapTime < cooldown) return;
-                
+
                 if (Math.abs(this.axisX) > 0.6) {
                     const rig = this.data.rig;
                     const direction = -Math.sign(this.axisX); // -1 for turn left, +1 for turn right
                     const angleRad = direction * window.snapTurnAngle * Math.PI / 180;
-                    
+
                     rig.object3D.rotateY(angleRad);
                     this.lastSnapTime = now;
 
@@ -1076,7 +1116,7 @@
                         if (controller && controller.hapticActuators && controller.hapticActuators.length > 0) {
                             controller.hapticActuators[0].play(0.1, 50);
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             }
         });
@@ -1141,7 +1181,7 @@
                     if (this.el.object3D.visible) this.el.setAttribute('visible', 'false');
                     return;
                 }
-                
+
                 if (!this.el.object3D.visible) this.el.setAttribute('visible', 'true');
 
                 const target = this.data.target;
@@ -1177,13 +1217,13 @@
             tick: function () {
                 const target = this.data.target;
                 if (!target) return;
-                
+
                 const targetPos = new THREE.Vector3();
                 target.object3D.getWorldPosition(targetPos);
-                
+
                 const currentPos = new THREE.Vector3();
                 this.el.object3D.getWorldPosition(currentPos);
-                
+
                 const lookPos = new THREE.Vector3(targetPos.x, currentPos.y, targetPos.z);
                 this.el.object3D.lookAt(lookPos);
             }
@@ -1261,7 +1301,7 @@
         // =========================================================================
         // 4. PROCEDURAL SOUND SYNTHESIS (WEB AUDIO API) & VOICE GUIDE (TTS)
         // =========================================================================
-        
+
         let audioCtx = null;
         window.audioMuted = false;
         window.speechSpeed = 1.0;
@@ -1283,7 +1323,7 @@
                 if (!audioCtx) return;
 
                 const now = audioCtx.currentTime;
-                
+
                 if (type === 'start') {
                     // Double tone up
                     createSynthesizerTone(523.25, 0.15, now);
@@ -1333,11 +1373,11 @@
             if (window.audioMuted) return;
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel(); // Mute ongoing guidance to avoid overlaps
-                
+
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.rate = window.speechSpeed;
                 utterance.pitch = 1.05; // Sleek futuristic assistant voice
-                
+
                 window.speechSynthesis.speak(utterance);
             }
         }
@@ -1345,7 +1385,7 @@
         // =========================================================================
         // 5. PROCEDURAL CITY SCENE GENERATOR
         // =========================================================================
-        
+
         function generateProceduralCity() {
             const cityContainer = document.querySelector('#city-blocks');
             const poiContainer = document.querySelector('#poi-group');
@@ -1400,7 +1440,7 @@
             const winCyanCanvas = document.createElement('canvas');
             winCyanCanvas.width = 64; winCyanCanvas.height = 128;
             const cCtx = winCyanCanvas.getContext('2d');
-            cCtx.fillStyle = 'rgba(0,0,0,0)'; cCtx.fillRect(0,0,64,128);
+            cCtx.fillStyle = 'rgba(0,0,0,0)'; cCtx.fillRect(0, 0, 64, 128);
             cCtx.fillStyle = '#00f2fe';
             for (let y = 6; y < 128; y += 14) {
                 for (let x = 6; x < 64; x += 14) {
@@ -1413,7 +1453,7 @@
             const winAmberCanvas = document.createElement('canvas');
             winAmberCanvas.width = 64; winAmberCanvas.height = 128;
             const aCtx = winAmberCanvas.getContext('2d');
-            aCtx.fillStyle = 'rgba(0,0,0,0)'; aCtx.fillRect(0,0,64,128);
+            aCtx.fillStyle = 'rgba(0,0,0,0)'; aCtx.fillRect(0, 0, 64, 128);
             aCtx.fillStyle = '#ffbd59';
             for (let y = 6; y < 128; y += 14) {
                 for (let x = 6; x < 64; x += 14) {
@@ -1458,7 +1498,7 @@
                 const dashCanvas = document.createElement('canvas');
                 dashCanvas.width = 4; dashCanvas.height = 32;
                 const dCtx = dashCanvas.getContext('2d');
-                dCtx.fillStyle = 'rgba(0,0,0,0)'; dCtx.fillRect(0,0,4,32);
+                dCtx.fillStyle = 'rgba(0,0,0,0)'; dCtx.fillRect(0, 0, 4, 32);
                 dCtx.fillStyle = '#00f2fe'; dCtx.fillRect(1, 4, 2, 10);
                 dCtx.fillRect(1, 20, 2, 10);
                 centerLine.setAttribute('material', `src: ${dashCanvas.toDataURL()}; repeat: 1 ${road.length / 8}; transparent: true; shader: flat`);
@@ -1477,7 +1517,7 @@
                 sidewalkLeft.setAttribute('width', swWidth);
                 sidewalkLeft.setAttribute('height', swHeight);
                 sidewalkLeft.setAttribute('depth', road.length);
-                sidewalkLeft.setAttribute('position', `${road.x - dz} ${swHeight/2} ${road.z - dx}`);
+                sidewalkLeft.setAttribute('position', `${road.x - dz} ${swHeight / 2} ${road.z - dx}`);
                 sidewalkLeft.setAttribute('rotation', `0 ${road.rotY} 0`);
                 sidewalkLeft.setAttribute('material', 'color: #272836; roughness: 0.7');
                 cityContainer.appendChild(sidewalkLeft);
@@ -1485,7 +1525,7 @@
                 sidewalkRight.setAttribute('width', swWidth);
                 sidewalkRight.setAttribute('height', swHeight);
                 sidewalkRight.setAttribute('depth', road.length);
-                sidewalkRight.setAttribute('position', `${road.x + dz} ${swHeight/2} ${road.z + dx}`);
+                sidewalkRight.setAttribute('position', `${road.x + dz} ${swHeight / 2} ${road.z + dx}`);
                 sidewalkRight.setAttribute('rotation', `0 ${road.rotY} 0`);
                 sidewalkRight.setAttribute('material', 'color: #272836; roughness: 0.7');
                 cityContainer.appendChild(sidewalkRight);
@@ -1538,19 +1578,19 @@
                 // Add glowing windows on building faces (planes slightly offset by 0.05m to prevent Z-fighting)
                 const winTex = isCyanStyle ? winCyanUrl : winAmberUrl;
                 const offsets = [
-                    { x: 0, z: depth/2 + 0.02, rotY: 0 },
-                    { x: 0, z: -depth/2 - 0.02, rotY: 180 },
-                    { x: width/2 + 0.02, z: 0, rotY: 90 },
-                    { x: -width/2 - 0.02, z: 0, rotY: -90 }
+                    { x: 0, z: depth / 2 + 0.02, rotY: 0 },
+                    { x: 0, z: -depth / 2 - 0.02, rotY: 180 },
+                    { x: width / 2 + 0.02, z: 0, rotY: 90 },
+                    { x: -width / 2 - 0.02, z: 0, rotY: -90 }
                 ];
 
                 offsets.forEach(off => {
                     const face = document.createElement('a-plane');
                     face.setAttribute('width', `${width * 0.8}`);
                     face.setAttribute('height', `${height * 0.85}`);
-                    face.setAttribute('position', `${coord.x + off.x} ${height/2} ${coord.z + off.z}`);
+                    face.setAttribute('position', `${coord.x + off.x} ${height / 2} ${coord.z + off.z}`);
                     face.setAttribute('rotation', `0 ${off.rotY} 0`);
-                    face.setAttribute('material', `src: ${winTex}; transparent: true; shader: flat; repeat: ${Math.round(width/3)} ${Math.round(height/4)}`);
+                    face.setAttribute('material', `src: ${winTex}; transparent: true; shader: flat; repeat: ${Math.round(width / 3)} ${Math.round(height / 4)}`);
                     cityContainer.appendChild(face);
                 });
 
@@ -1735,7 +1775,7 @@
             pole.setAttribute('position', '3.5 2.25 3.5');
             pole.setAttribute('material', 'color: #4b5563');
             cityContainer.appendChild(pole);
-            
+
             // Sign boards facing roads
             const labels = [
                 { text: "<- Tech Hub", pos: "3.5 4 3.5", rotY: 0 },
@@ -1764,7 +1804,7 @@
                 const pinEntity = document.createElement('a-entity');
                 pinEntity.setAttribute('id', `pin-${key}`);
                 pinEntity.setAttribute('position', `${p.x} 3 ${p.z}`);
-                
+
                 // Cone pointing down
                 const cone = document.createElement('a-cone');
                 cone.setAttribute('radius-bottom', '0.04');
@@ -1775,7 +1815,7 @@
                 cone.setAttribute('material', 'color: #ff2d55; shader: flat; emissive: #ff2d55; emissiveIntensity: 0.3');
                 // Glow scale listener component
                 cone.setAttribute('hover-glow', 'color: #00f2fe; originalColor: #ff2d55; scale: 1.2');
-                
+
                 // Clicking pin starts routing directly! (Google maps style interaction)
                 cone.addEventListener('click', () => {
                     document.getElementById('destination-selector').value = key;
@@ -1799,7 +1839,7 @@
                 tagBoard.setAttribute('billboard', '');
                 tagBoard.setAttribute('material', 'color: #070913; opacity: 0.85; transparent: true');
                 tagBoard.setAttribute('class', 'clickable');
-                
+
                 // Glowing border for tag board
                 const tagRing = document.createElement('a-ring');
                 tagRing.setAttribute('radius-inner', '1.1');
@@ -1833,7 +1873,7 @@
                 const miniPoi = document.createElement('a-sphere');
                 miniPoi.setAttribute('radius', '0.012');
                 miniPoi.setAttribute('position', `${p.x / 200} 0.005 ${p.z / 200}`);
-                
+
                 let miniColor = '#00f2fe'; // office cyan
                 if (p.category === "Medical") miniColor = '#ef4444'; // Red Cross Hospital
                 if (p.category === "Nature") miniColor = '#10b981'; // Green Park
@@ -1848,12 +1888,12 @@
         // =========================================================================
         // 6. GPS CORE STATE NAVIGATION ENGINE
         // =========================================================================
-        
+
         let activeRoute = null;         // array of Node IDs
         let currentWaypointIdx = 0;    // current target index in path
         let activeRouteTargetId = "";   // target Node ID
         let recalculateCooldown = 0;   // prevent loop calculation
-        
+
         window.movementSpeed = 5.0;     // default speeds
         window.snapTurnAngle = 45;      // snap turning defaults
         window.isOverview = false;
@@ -1877,7 +1917,7 @@
 
             const rig = document.querySelector('#rig');
             const camera = document.querySelector('#camera');
-            
+
             // 6.1. Calculate nearest node to begin path
             const playerPos = new THREE.Vector3();
             camera.object3D.getWorldPosition(playerPos);
@@ -1961,11 +2001,11 @@
             // Loop segments and build cylinders/minimap planes
             for (let i = 0; i < path.length - 1; i++) {
                 const nodeA = NODES[path[i]];
-                const nodeB = NODES[path[i+1]];
+                const nodeB = NODES[path[i + 1]];
 
                 const dx = nodeB.x - nodeA.x;
                 const dz = nodeB.z - nodeA.z;
-                const length = Math.sqrt(dx*dx + dz*dz);
+                const length = Math.sqrt(dx * dx + dz * dz);
                 const midX = (nodeA.x + nodeB.x) / 2;
                 const midZ = (nodeA.z + nodeB.z) / 2;
 
@@ -1974,7 +2014,7 @@
                 segment.setAttribute('radius', '0.35');
                 segment.setAttribute('height', `${length}`);
                 segment.setAttribute('position', `${midX} 0.05 ${midZ}`);
-                
+
                 const angle = Math.atan2(dx, dz);
                 const rotY = angle * 180 / Math.PI;
                 segment.setAttribute('rotation', `90 ${rotY} 0`);
@@ -2026,10 +2066,10 @@
         // Translate route node lists to descriptive list of turn steps
         function buildRouteDirectionsList(path) {
             const stepsList = [];
-            
+
             for (let i = 0; i < path.length - 1; i++) {
                 const curr = path[i];
-                const next = path[i+1];
+                const next = path[i + 1];
                 const street = getStreetNameString(curr, next);
                 const distance = Math.round(GRAPH[curr][next]);
 
@@ -2037,14 +2077,14 @@
                 let icon = "↑";
 
                 if (i > 0) {
-                    const prev = path[i-1];
+                    const prev = path[i - 1];
                     const vIn = { x: NODES[curr].x - NODES[prev].x, z: NODES[curr].z - NODES[prev].z };
                     const vOut = { x: NODES[next].x - NODES[curr].x, z: NODES[next].z - NODES[curr].z };
 
                     const angIn = Math.atan2(vIn.z, vIn.x);
                     const angOut = Math.atan2(vOut.z, vOut.x);
                     let diff = angOut - angIn;
-                    
+
                     // Normalize angles
                     while (diff > Math.PI) diff -= 2 * Math.PI;
                     while (diff < -Math.PI) diff += 2 * Math.PI;
@@ -2116,7 +2156,7 @@
             // 1. Distance to current active segment node target
             const targetId = activeRoute[currentWaypointIdx];
             const targetNode = NODES[targetId];
-            const distToNextNode = Math.sqrt((px - targetNode.x)**2 + (pz - targetNode.z)**2);
+            const distToNextNode = Math.sqrt((px - targetNode.x) ** 2 + (pz - targetNode.z) ** 2);
 
             // A-Frame Waypoint Trigger Distance (<5 meters)
             if (distToNextNode < 5.0) {
@@ -2132,11 +2172,11 @@
                     // Progress to next path node waypoint
                     currentWaypointIdx++;
                     playChime('waypoint');
-                    
+
                     const nextTargetId = activeRoute[currentWaypointIdx];
                     const nextTarget = NODES[nextTargetId];
                     const nextStreet = getStreetNameString(targetId, nextTargetId);
-                    
+
                     announceDirection(`Waypoint reached. Go straight towards ${nextTarget.name} on ${nextStreet}`);
                 }
             }
@@ -2145,9 +2185,9 @@
             if (currentWaypointIdx > 0 && currentWaypointIdx < activeRoute.length) {
                 const prevNode = NODES[activeRoute[currentWaypointIdx - 1]];
                 const currNode = NODES[activeRoute[currentWaypointIdx]];
-                
+
                 const offRouteDist = distanceToLineSegment(px, pz, prevNode.x, prevNode.z, currNode.x, currNode.z);
-                
+
                 // If user wanders > 15m away, recalculate route automatically
                 const now = Date.now();
                 if (offRouteDist > 15.0 && now - recalculateCooldown > 8000) {
@@ -2155,7 +2195,7 @@
                     playChime('recalculate');
                     announceDirection("Recalculating route.");
                     showAlert("Off Route! Recalculating...", "warning");
-                    
+
                     // Re-route from nearest node to destination
                     const newStartNode = findNearestNode(px, pz);
                     const newPath = calculateShortestPath(newStartNode, activeRouteTargetId);
@@ -2172,17 +2212,17 @@
             let remainingDistance = distToNextNode;
             for (let i = currentWaypointIdx; i < activeRoute.length - 1; i++) {
                 const nodeA = activeRoute[i];
-                const nodeB = activeRoute[i+1];
+                const nodeB = activeRoute[i + 1];
                 remainingDistance += GRAPH[nodeA][nodeB];
             }
 
             // Compute Estimated Time (Walking speed averages 1.4m/s, simulation scale speed ~3.0m/s)
             const etaSeconds = Math.round(remainingDistance / 3.0);
-            const etaString = etaSeconds >= 60 ? `${Math.floor(etaSeconds/60)}m ${etaSeconds%60}s` : `${etaSeconds}s`;
+            const etaString = etaSeconds >= 60 ? `${Math.floor(etaSeconds / 60)}m ${etaSeconds % 60}s` : `${etaSeconds}s`;
 
             // 4. Update UI Panels (HTML and VR Texts)
             const directionsList = buildRouteDirectionsList(activeRoute);
-            
+
             // A. HTML panel sync
             const nextStep = directionsList[currentWaypointIdx] || { instruction: "Arrive at destination", icon: "🏁" };
             document.getElementById('hud-nav-icon').innerText = nextStep.icon;
@@ -2219,17 +2259,17 @@
 
         // Distance to line segment helper (exact math)
         function distanceToLineSegment(px, pz, ax, az, bx, bz) {
-            const l2 = (ax - bx)**2 + (az - bz)**2;
-            if (l2 === 0) return Math.sqrt((px - ax)**2 + (pz - az)**2);
+            const l2 = (ax - bx) ** 2 + (az - bz) ** 2;
+            if (l2 === 0) return Math.sqrt((px - ax) ** 2 + (pz - az) ** 2);
             let t = ((px - ax) * (bx - ax) + (pz - az) * (bz - az)) / l2;
             t = Math.max(0, Math.min(1, t));
-            return Math.sqrt((px - (ax + t * (bx - ax)))**2 + (pz - (az + t * (bz - az)))**2);
+            return Math.sqrt((px - (ax + t * (bx - ax))) ** 2 + (pz - (az + t * (bz - az))) ** 2);
         }
 
         // =========================================================================
         // 7. VIEW MODE TRANSITIONS (GROUND LOC-STEPS VS OVERVIEW MAP FLIGHT)
         // =========================================================================
-        
+
         function toggleOverviewGroundMode() {
             const rig = document.querySelector('#rig');
             const camera = document.querySelector('#camera');
@@ -2259,7 +2299,7 @@
                 showAlert("Overview Map Enabled");
                 document.getElementById('btn-toggle-view-2d').innerText = "Return to First-Person";
                 document.querySelector('#vr-txt-toggle-view').setAttribute('value', "GROUND MODE");
-                
+
                 // Hide WASD helper
                 document.getElementById('desktop-instructions').style.display = 'none';
             } else {
@@ -2287,7 +2327,7 @@
             if (window.inTransition) return;
 
             cancelNavigation();
-            
+
             groundSavePos.set(-50, 0, -55);
             groundSaveRotY = 0;
 
@@ -2316,7 +2356,7 @@
         // =========================================================================
         // 8. SETUP EVENT HANDLERS AND EVENT LISTENERS
         // =========================================================================
-        
+
         window.addEventListener('DOMContentLoaded', () => {
             // 8.1. Generate City environment
             generateProceduralCity();
@@ -2418,7 +2458,7 @@
         // Toggle Audio and GPS Muted state
         function toggleMuteState() {
             window.audioMuted = !window.audioMuted;
-            
+
             const muteBtn2d = document.getElementById('mute-toggle-2d');
             const vrMuteTxt = document.querySelector('#vr-txt-mute');
             const vrMuteBtn = document.querySelector('#vr-btn-mute');
@@ -2430,10 +2470,10 @@
                 document.getElementById('audio-svg-icon').innerHTML = `
                     <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
                 `;
-                
+
                 if (vrMuteTxt) vrMuteTxt.setAttribute('value', 'UNMUTE VOICE');
                 if (vrMuteBtn) vrMuteBtn.setAttribute('material', 'color', '#ef4444');
-                
+
                 // Mute window speech synthesizer
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel();
@@ -2446,10 +2486,10 @@
                 document.getElementById('audio-svg-icon').innerHTML = `
                     <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                 `;
-                
+
                 if (vrMuteTxt) vrMuteTxt.setAttribute('value', 'MUTE VOICE');
                 if (vrMuteBtn) vrMuteBtn.setAttribute('material', 'color', '#10b981');
-                
+
                 showAlert("Audio Unmuted");
                 playChime('click');
             }
@@ -2472,7 +2512,7 @@
         // =========================================================================
         // 9. ANIMATION TICK LOOPS (TICK REGISTRATION)
         // =========================================================================
-        
+
         AFRAME.registerComponent('scene-tick-controller', {
             init: function () {
                 this.camera = document.querySelector('#camera');
@@ -2506,7 +2546,7 @@
 
                     // Sine ease-out interpolation
                     const t = Math.sin(transProgress * Math.PI / 2);
-                    
+
                     // Interpolate rig coordinates
                     this.rig.object3D.position.lerpVectors(rigStartPos, rigEndPos, t);
                     this.rig.object3D.rotation.y = rigStartRotY + (rigEndRotY - rigStartRotY) * t;
